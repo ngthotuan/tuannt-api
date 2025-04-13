@@ -1,0 +1,123 @@
+#!/bin/bash
+PROJECT=api
+ENVIRONMENT=dev
+HOME_PROJECT=/Users/tuannt7/dev/java-projects/projects/tuannt-api
+JAVA_VERSION=17
+SCRIPT_PATH=$(dirname $(readlink -f $0))
+AUTH_AGENT_HOME=$HOME_PROJECT/
+pid_file=tmp/$PROJECT.pid
+console_log_file=tmp/console.log
+cd $HOME_PROJECT
+export AUTH_AGENT_HOME
+export JAVA_HOME=/Users/tuannt7/Library/Java/JavaVirtualMachines/corretto-17.0.11/Contents/Home
+
+getpid() {
+    pid=$?
+}
+
+start() {
+    if [ -f $pid_file ]; then
+        read pid <$pid_file
+        if [ -n "$pid" ]; then
+            echo "Service is already running."
+            return
+        fi
+    fi
+
+    if [[ -n "$JAVA_HOME" ]] && [[ -x "$JAVA_HOME/bin/java" ]];  then
+        echo Found java executable in JAVA_HOME
+        JAVA_CMD="$JAVA_HOME/bin/java"
+    elif [[ -n "$JAVA" ]] && [[ -x "$JAVA" ]];  then
+        echo Found java executable by JAVA
+        JAVA_CMD="$JAVA"
+    elif type -p java; then
+        echo Found java executable in PATH
+        JAVA_CMD=java
+    else
+        echo "Cannot find a Java JDK. Please set JAVA_HOME, JAVA executable or put java (>= $JAVA_VERSION) in your PATH."
+        exit 1
+    fi
+
+    if [[ "$JAVA_CMD" ]]; then
+        version=$("$JAVA_CMD" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+        if [[ "$version" > $JAVA_VERSION ]]; then
+        echo Java version "$version"
+        else
+        echo JAVA_CMD=$JAVA_CMD
+        echo Java version "$version" is less than required $JAVA_VERSION
+        exit 1
+        fi
+    fi
+
+    cd "$AUTH_AGENT_HOME"
+    echo -n "AUTH_AGENT_HOME="
+    pwd
+    echo "$JAVA_CMD"
+    nohup "$JAVA_CMD"  \
+        -jar $HOME_PROJECT/dist/$PROJECT.jar \
+        --spring.profiles.active=$ENVIRONMENT \
+        --EXAMPLE_ENV="123" \
+        --spring.config.location=$HOME_PROJECT/conf/ \
+        --logging.config=file:$HOME_PROJECT/conf/logback-spring.xml > $console_log_file 2>&1 &
+    pid=$!
+    if [[ -z  "$pid" ]]; then
+        echo "Service failed to start. See log for more info."
+    else
+        echo "$pid" > $pid_file
+        echo "Service has started. PID: $pid"
+    fi
+
+}
+stop() {
+    read pid <$pid_file
+    if [ -n "$pid" ]; then
+        kill $pid
+        echo "" > $pid_file
+    else
+        echo "Service is not running."
+        return 1
+    fi
+    echo "Waiting for the service to finish stopping..."
+    sleep 3
+    while [ 1 ]
+    do
+        if ps -p $pid | grep $pid > /dev/null
+        then
+            sleep 1
+        else
+            break
+        fi
+    done
+    return 0
+
+}
+
+status() {
+    read pid <$pid_file
+    if [ -n "$pid" ]
+        then echo "$PROJECT (pid $pid) is running..."
+        else echo "$PROJECT is NOT running"
+    fi
+
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|restart|status}"
+        exit 1
+esac
+
+exit 0

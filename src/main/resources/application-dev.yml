@@ -1,0 +1,26 @@
+server:
+  port: 8089
+  servlet:
+    context-path: /api
+  config:
+    connection-timeout: 30000
+    request-timeout: 30000
+    read-timeout: 30000
+    write-timeout: 30000
+    max-ide-time: 20000
+    max-connection: 50
+    max-life-time: 60000
+notification:
+  telegram:
+    enable: true
+    domain: https://api.telegram.org
+    token: ${TELEGRAM_TOKEN}
+    chatId: ${TELEGRAM_CHAT_ID}
+adyen:
+  merchantAccount: ${ADYEN_MERCHANT_ACCOUNT}
+  apiKey: ${ADYEN_API_KEY}
+  urlPayments: "https://checkout-test.adyen.com/v67/payments"
+  urlDetails: "https://checkout-test.adyen.com/v71/payments/details"
+  urlPmMethod: "https://checkout-test.adyen.com/v71/storedPaymentMethods"
+  urlListDetails: "https://pal-test.adyen.com/pal/servlet/Recurring/v68/listRecurringDetails"
+  redirectUrl: "http://localhost:8089/api/v1/adyen/rd"
