@@ -14,7 +14,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 @RequiredArgsConstructor
 public class GlobalConfig {
-    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private final ServerConfig serverConfig;
 
     @Bean
@@ -51,7 +49,6 @@ public class GlobalConfig {
         return new ObjectMapper()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .registerModule(new JavaTimeModule())
-                .setDateFormat(new SimpleDateFormat(DATE_TIME_FORMAT))
                 ;
     }
 }
