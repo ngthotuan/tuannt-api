@@ -6,6 +6,7 @@ package com.tuannt.api.constants;
 
 public final class ApiPaths {
     public static final String API_ADYEN_PATH = "/v1/adyen";
+    public static final String API_ARTICLE_PATH = "/v1/article";
 
     private ApiPaths() {
     }

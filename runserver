@@ -55,7 +55,7 @@ start() {
     echo "$JAVA_CMD"
     nohup "$JAVA_CMD"  \
         -jar $HOME_PROJECT/dist/$PROJECT.jar \
-        --spring.profiles.active=$ENVIRONMENT \
+        --spring.profiles.active=$ENVIRONMENT,article \
         --EXAMPLE_ENV="123" \
         --spring.config.location=$HOME_PROJECT/conf/ \
         --logging.config=file:$HOME_PROJECT/conf/logback-spring.xml > $console_log_file 2>&1 &
