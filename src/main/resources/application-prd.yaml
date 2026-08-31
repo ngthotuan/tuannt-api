@@ -1,0 +1,14 @@
+notification:
+  telegram:
+    enable: true
+    domain: https://api.telegram.org
+    token: ${TELEGRAM_TOKEN}
+    chatId: ${TELEGRAM_CHAT_ID}
+adyen:
+  merchantAccount: ${ADYEN_MERCHANT_ACCOUNT}
+  apiKey: ${ADYEN_API_KEY}
+  urlPayments: "https://sample-checkout-live.adyenpayments.com/checkout/v67/payments"
+  urlDetails: "https://sample-checkout-live.adyenpayments.com/checkout/v67/payments/details"
+  urlPmMethod: "https://sample-checkout-live.adyenpayments.com/v71/storedPaymentMethods"
+  urlListDetails: "https://sample-pal-live.adyenpayments.com/pal/servlet/Recurring/v68/listRecurringDetails"
+  redirectUrl: "${ADYEN_REDIRECT_URL:http://localhost:8089/v1/adyen/rd}"

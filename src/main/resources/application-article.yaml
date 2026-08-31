@@ -1,0 +1,269 @@
+config:
+  article:
+    vnexpress:
+      tin-moi-nhat:
+        url: "https://vnexpress.net/rss/tin-moi-nhat.rss"
+        title: "Tin mới nhất"
+      the-gioi:
+        url: "https://vnexpress.net/rss/the-gioi.rss"
+        title: "Thế giới"
+      thoi-su:
+        url: "https://vnexpress.net/rss/thoi-su.rss"
+        title: "Thời sự"
+      kinh-doanh:
+        url: "https://vnexpress.net/rss/kinh-doanh.rss"
+        title: "Kinh doanh"
+      startup:
+        url: "https://vnexpress.net/rss/startup.rss"
+        title: "Startup"
+      giai-tri:
+        url: "https://vnexpress.net/rss/giai-tri.rss"
+        title: "Giải trí"
+      the-thao:
+        url: "https://vnexpress.net/rss/the-thao.rss"
+        title: "Thể thao"
+      phap-luat:
+        url: "https://vnexpress.net/rss/phap-luat.rss"
+        title: "Pháp luật"
+      giao-duc:
+        url: "https://vnexpress.net/rss/giao-duc.rss"
+        title: "Giáo dục"
+      tin-noi-bat:
+        url: "https://vnexpress.net/rss/tin-noi-bat.rss"
+        title: "Tin nổi bật"
+      suc-khoe:
+        url: "https://vnexpress.net/rss/suc-khoe.rss"
+        title: "Sức khỏe"
+      gia-dinh:
+        url: "https://vnexpress.net/rss/gia-dinh.rss"
+        title: "Đời sống"
+      du-lich:
+        url: "https://vnexpress.net/rss/du-lich.rss"
+        title: "Du lịch"
+      khoa-hoc:
+        url: "https://vnexpress.net/rss/khoa-hoc.rss"
+        title: "Khoa học"
+      cong-nghe:
+        url: "https://vnexpress.net/rss/cong-nghe.rss"
+        title: "Công nghệ"
+      oto-xe-may:
+        url: "https://vnexpress.net/rss/oto-xe-may.rss"
+        title: "Xe"
+      y-kien:
+        url: "https://vnexpress.net/rss/y-kien.rss"
+        title: "Ý kiến"
+      tam-su:
+        url: "https://vnexpress.net/rss/tam-su.rss"
+        title: "Tâm sự"
+      cuoi:
+        url: "https://vnexpress.net/rss/cuoi.rss"
+        title: "Cười"
+      tin-xem-nhieu:
+        url: "https://vnexpress.net/rss/tin-xem-nhieu.rss"
+        title: "Tin xem nhiều"
+    dantri:
+      trang-chu:
+        url: "https://dantri.com.vn/rss/home.rss"
+        title: "Trang chủ"
+      su-kien:
+        url: "https://dantri.com.vn/rss/su-kien.rss"
+        title: "Sự kiện"
+      xa-hoi:
+        url: "https://dantri.com.vn/rss/xa-hoi.rss"
+        title: "Xã hội"
+      the-gioi:
+        url: "https://dantri.com.vn/rss/the-gioi.rss"
+        title: "Thế giới"
+      gia-vang:
+        url: "https://dantri.com.vn/rss/gia-vang.rss"
+        title: "Giá vàng"
+      doi-song:
+        url: "https://dantri.com.vn/rss/doi-song.rss"
+        title: "Đời sống"
+      the-thao:
+        url: "https://dantri.com.vn/rss/the-thao.rss"
+        title: "Thể thao"
+      lao-dong-viec-lam:
+        url: "https://dantri.com.vn/rss/lao-dong-viec-lam.rss"
+        title: "Lao động - Việc làm"
+      giao-duc:
+        url: "https://dantri.com.vn/rss/giao-duc.rss"
+        title: "Giáo dục"
+      tam-long-nhan-ai:
+        url: "https://dantri.com.vn/rss/tam-long-nhan-ai.rss"
+        title: "Tấm lòng nhân ái"
+      kinh-doanh:
+        url: "https://dantri.com.vn/rss/kinh-doanh.rss"
+        title: "Kinh doanh"
+      bat-dong-san:
+        url: "https://dantri.com.vn/rss/bat-dong-san.rss"
+        title: "Bất động sản"
+      giai-tri:
+        url: "https://dantri.com.vn/rss/giai-tri.rss"
+        title: "Giải trí"
+      du-lich:
+        url: "https://dantri.com.vn/rss/du-lich.rss"
+        title: "Du lịch"
+      phap-luat:
+        url: "https://dantri.com.vn/rss/phap-luat.rss"
+        title: "Pháp luật"
+      suc-khoe:
+        url: "https://dantri.com.vn/rss/suc-khoe.rss"
+        title: "Sức khỏe"
+      cong-nghe:
+        url: "https://dantri.com.vn/rss/cong-nghe.rss"
+        title: "Công nghệ"
+      o-to-xe-may:
+        url: "https://dantri.com.vn/rss/o-to-xe-may.rss"
+        title: "Ô tô - Xe máy"
+      tinh-yeu-gioi-tinh:
+        url: "https://dantri.com.vn/rss/tinh-yeu-gioi-tinh.rss"
+        title: "Tình yêu - Giới tính"
+      khoa-hoc:
+        url: "https://dantri.com.vn/rss/khoa-hoc.rss"
+        title: "Khoa học"
+      noi-vu:
+        url: "https://dantri.com.vn/rss/noi-vu.rss"
+        title: "Nội vụ"
+      ban-doc:
+        url: "https://dantri.com.vn/rss/ban-doc.rss"
+        title: "Bạn đọc"
+      tam-diem:
+        url: "https://dantri.com.vn/rss/tam-diem.rss"
+        title: "Tâm điểm"
+      dmagazine:
+        url: "https://dantri.com.vn/rss/dmagazine.rss"
+        title: "Dmagazine"
+      infographic:
+        url: "https://dantri.com.vn/rss/infographic.rss"
+        title: "Infographic"
+      photo-news:
+        url: "https://dantri.com.vn/rss/photo-news.rss"
+        title: "Photo News"
+      dnews:
+        url: "https://dantri.com.vn/rss/dnews.rss"
+        title: "DNews"
+      toa-dam-truc-tuyen:
+        url: "https://dantri.com.vn/rss/toa-dam-truc-tuyen.rss"
+        title: "Tọa đàm trực tuyến"
+      xo-so:
+        url: "https://dantri.com.vn/rss/xo-so.rss"
+        title: "Xổ số"
+      interactive:
+        url: "https://dantri.com.vn/rss/interactive.rss"
+        title: "Interactive"
+      tet-2025:
+        url: "https://dantri.com.vn/rss/tet-2025.rss"
+        title: "Tết 2025"
+      photo-story:
+        url: "https://dantri.com.vn/rss/photo-story.rss"
+        title: "Photo Story"
+      d-buzz:
+        url: "https://dantri.com.vn/rss/d-buzz.rss"
+        title: "D-Buzz"
+    thanhnien:
+      trang-chu:
+        url: "https://thanhnien.vn/rss/home.rss"
+        title: "Trang chủ"
+      thoi-su:
+        url: "https://thanhnien.vn/rss/thoi-su.rss"
+        title: "Thời sự"
+      chinh-tri:
+        url: "https://thanhnien.vn/rss/chinh-tri.rss"
+        title: "Chính trị"
+      chao-ngay-moi:
+        url: "https://thanhnien.vn/rss/chao-ngay-moi.rss"
+        title: "Chào ngày mới"
+      the-gioi:
+        url: "https://thanhnien.vn/rss/the-gioi.rss"
+        title: "Thế giới"
+      kinh-te:
+        url: "https://thanhnien.vn/rss/kinh-te.rss"
+        title: "Kinh tế"
+      doi-song:
+        url: "https://thanhnien.vn/rss/doi-song.rss"
+        title: "Đời sống"
+      suc-khoe:
+        url: "https://thanhnien.vn/rss/suc-khoe.rss"
+        title: "Sức khỏe"
+      gioi-tre:
+        url: "https://thanhnien.vn/rss/gioi-tre.rss"
+        title: "Giới trẻ"
+      tieu-dung-thong-minh:
+        url: "https://thanhnien.vn/rss/tieu-dung-thong-minh.rss"
+        title: "Tiêu dùng thông minh"
+      giao-duc:
+        url: "https://thanhnien.vn/rss/giao-duc.rss"
+        title: "Giáo dục"
+      du-lich:
+        url: "https://thanhnien.vn/rss/du-lich.rss"
+        title: "Du lịch"
+      van-hoa:
+        url: "https://thanhnien.vn/rss/van-hoa.rss"
+        title: "Văn hóa"
+      giai-tri:
+        url: "https://thanhnien.vn/rss/giai-tri.rss"
+        title: "Giải trí"
+      the-thao:
+        url: "https://thanhnien.vn/rss/the-thao.rss"
+        title: "Thể thao"
+      cong-nghe:
+        url: "https://thanhnien.vn/rss/cong-nghe.rss"
+        title: "Công nghệ"
+      xe:
+        url: "https://thanhnien.vn/rss/xe.rss"
+        title: "Xe"
+      thoi-trang-tre:
+        url: "https://thanhnien.vn/rss/thoi-trang-tre.rss"
+        title: "Thời trang trẻ"
+      ban-doc:
+        url: "https://thanhnien.vn/rss/ban-doc.rss"
+        title: "Bạn đọc"
+      rao-vat:
+        url: "https://thanhnien.vn/rss/rao-vat.rss"
+        title: "Rao vặt"
+      video:
+        url: "https://thanhnien.vn/rss/video.rss"
+        title: "Video"
+      dien-dan:
+        url: "https://thanhnien.vn/rss/dien-dan.rss"
+        title: "Diễn đàn"
+      podcast:
+        url: "https://thanhnien.vn/rss/podcast.rss"
+        title: "Podcast"
+      nhat-ky-tet-viet:
+        url: "https://thanhnien.vn/rss/nhat-ky-tet-viet.rss"
+        title: "Nhật ký Tết Việt"
+      magazine:
+        url: "https://thanhnien.vn/rss/magazine.rss"
+        title: "Magazine"
+      cung-con-di-tiep-cuoc-doi:
+        url: "https://thanhnien.vn/rss/cung-con-di-tiep-cuoc-doi.rss"
+        title: "Cùng con đi tiếp cuộc đời"
+      ban-can-biet:
+        url: "https://thanhnien.vn/rss/ban-can-biet.rss"
+        title: "Bạn cần biết"
+      cai-chinh:
+        url: "https://thanhnien.vn/rss/cai-chinh.rss"
+        title: "Cải chính"
+      blog-phong-vien:
+        url: "https://thanhnien.vn/rss/blog-phong-vien.rss"
+        title: "Blog phóng viên"
+      toi-viet:
+        url: "https://thanhnien.vn/rss/toi-viet.rss"
+        title: "Tôi viết"
+      viec-lam:
+        url: "https://thanhnien.vn/rss/viec-lam.rss"
+        title: "Việc làm"
+      tno:
+        url: "https://thanhnien.vn/rss/tno.rss"
+        title: "TNO"
+      tin-24h:
+        url: "https://thanhnien.vn/rss/tin-24h.rss"
+        title: "Tin 24h"
+      thi-truong:
+        url: "https://thanhnien.vn/rss/thi-truong.rss"
+        title: "Tin thị trường"
+      tin-nhanh-360:
+        url: "https://thanhnien.vn/rss/tin-nhanh-360.rss"
+        title: "Tin nhanh 360"

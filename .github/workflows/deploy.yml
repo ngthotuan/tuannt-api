@@ -1,0 +1,35 @@
+name: Deploy to Heroku
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Heroku's git receiver needs real history; the default shallow clone is rejected.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # Fail fast here: a compile error should stop the pipeline before it costs a Heroku release.
+      # Heroku's buildpack builds again on its side, so this is a check, not the artifact source.
+      - run: mvn -B -DskipTests clean package
+
+      # --force because Heroku is a deploy target, not a source of truth: any history rewrite on
+      # GitHub would otherwise leave its git receiver rejecting every later push as non-fast-forward.
+      - name: Push to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git push --force "https://heroku:$HEROKU_API_KEY@git.heroku.com/nttuan-api.git" HEAD:refs/heads/main

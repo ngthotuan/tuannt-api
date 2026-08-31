@@ -1,0 +1,36 @@
+spring:
+  profiles:
+    active: article,dev
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useSSL=true&sslMode=REQUIRED&serverTimezone=UTC
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+cors:
+  allowedOriginPatterns:
+    - "https://nttuan.dev"
+    - "https://*.nttuan-web.pages.dev"
+    - "http://localhost:5173"
+    - "http://localhost:4173"
+  allowedMethods:
+    - GET
+    - POST
+    - OPTIONS
+  allowedHeaders:
+    - "*"
+  maxAge: 3600
+server:
+  port: ${PORT:8089}
+  config:
+    connection-timeout: 30000
+    request-timeout: 30000
+    read-timeout: 30000
+    write-timeout: 30000
+    max-ide-time: 20000
+    max-connection: 50
+    max-life-time: 60000
