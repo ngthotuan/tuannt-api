@@ -28,8 +28,8 @@ public class LoggingAspect {
     private final HttpServletRequest request;
     private final CommonUtil commonUtil;
 
-    // Khong rang buoc tham so: pointcut cu dung args(.., body) nen method khong tham so
-    // (vd GET /v1/article/sources) khong bao gio duoc log.
+    // No argument binding: the old args(.., body) pointcut skipped zero-arg methods entirely,
+    // so GET /v1/article/sources was never logged.
     @SneakyThrows
     @Around("execution(public * com.tuannt.api.controllers.*.*(..))")
     public Object logControllers(final ProceedingJoinPoint joinPoint) {

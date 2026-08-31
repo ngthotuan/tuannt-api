@@ -14,6 +14,7 @@ public enum ApiStatus {
     UNAUTHORIZED("Unauthorized request"),
     BAD_REQUEST("Bad request"),
     METHOD_NOT_ALLOW("Method not allow"),
+    TOO_MANY_REQUESTS("Too many requests, please try again later"),
     INTERNAL_SERVER_ERROR("Server error"),
     EXTERNAL_SERVER_ERROR("External service error"),
     INVALID_TTL("Invalid ttl"),

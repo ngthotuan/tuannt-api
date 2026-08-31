@@ -11,6 +11,11 @@ spring:
       ddl-auto: none
     show-sql: false
     open-in-view: false
+  # Flyway owns the schema; ddl-auto stays none so Hibernate never changes tables itself.
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 cors:
   allowedOriginPatterns:
     - "https://nttuan.dev"

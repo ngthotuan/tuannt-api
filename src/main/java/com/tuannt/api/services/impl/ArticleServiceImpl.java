@@ -92,8 +92,8 @@ public class ArticleServiceImpl implements ArticleService {
             articleResDto.setCategory(articleReqDto.getCategory());
 
         } catch (Exception ex) {
-            // Truoc day loi bi nuot va van tra 200 kem body rong mot nua, khien client tuong
-            // la "khong co bai" thay vi biet nguon RSS dang loi.
+            // This used to be swallowed and still return 200 with a half-empty body, so clients
+            // saw "no articles" instead of learning the RSS source had failed.
             log.error("Error fetching articles source: {} category: {} url: {}",
                     articleReqDto.getSource(), articleReqDto.getCategory(), article.getUrl(), ex);
             throw new InternalException(ApiStatus.EXTERNAL_SERVER_ERROR);
@@ -105,7 +105,7 @@ public class ArticleServiceImpl implements ArticleService {
         URLConnection connection = URI.create(url).toURL().openConnection();
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(READ_TIMEOUT_MS);
-        // Mot so nguon RSS tu choi user-agent mac dinh cua Java.
+        // Some RSS sources reject the default Java user agent.
         connection.setRequestProperty("User-Agent", USER_AGENT);
         try (InputStream stream = connection.getInputStream()) {
             return new SyndFeedInput().build(new XmlReader(stream));

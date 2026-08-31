@@ -8,9 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by tuannt7 on 31/08/2026
  * <p>
- * Serialize dung cho muc dich log/toString. Co ObjectMapper static final rieng thay vi
- * muon bean cua Spring, vi {@link com.tuannt.api.dtos.BaseDto} la POJO thuong khong the
- * inject dependency. Day la hang so that su, khong phai state bi gan tu ben ngoai.
+ * Serialization for logging / toString. Holds its own static final ObjectMapper rather than
+ * borrowing the Spring bean, because {@link com.tuannt.api.dtos.BaseDto} is a plain POJO that
+ * cannot be injected. This is a genuine constant, not state assigned from outside.
  */
 @Slf4j
 public final class JsonUtil {

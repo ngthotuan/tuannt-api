@@ -44,7 +44,7 @@ public class TelegramNotificationService implements NotificationService {
             TelegramResp telegramResp = commonUtil.sendPost(url, body, TelegramResp.class);
             return telegramResp != null && telegramResp.isSuccess();
         } catch (Exception e) {
-            // Telegram tra 429 khi gui lien tuc qua nhieu; retry mot lan sau khoang cho no yeu cau.
+            // Telegram returns 429 when messages are sent too fast; retry once after the delay it asks for.
             TelegramResp telegramResp = commonUtil.jsonStringToObject(e.getMessage(), TelegramResp.class);
             if (telegramResp != null && !telegramResp.isSuccess() && telegramResp.getErrorCode() == 429) {
                 long retryMs = telegramResp.retryMs();
@@ -53,7 +53,7 @@ public class TelegramNotificationService implements NotificationService {
                     Thread.sleep(retryMs);
                     return sentMessage(to, title, message);
                 } catch (InterruptedException interruptedException) {
-                    // Khoi phuc co interrupt, neu khong thread pool se mat tin hieu huy.
+                    // Restore the interrupt flag, otherwise the pool loses the cancellation signal.
                     Thread.currentThread().interrupt();
                     log.error("Telegram sentMessage retry interrupted", interruptedException);
                     return false;
