@@ -1,7 +1,7 @@
 package com.tuannt.api.dtos;
 
 
-import com.tuannt.api.utils.CommonUtil;
+import com.tuannt.api.utils.JsonUtil;
 
 import java.io.Serializable;
 
@@ -12,6 +12,6 @@ import java.io.Serializable;
 public abstract class BaseDto implements Serializable {
     @Override
     public String toString() {
-        return CommonUtil.objectToJsonString(this);
+        return JsonUtil.toJson(this);
     }
 }

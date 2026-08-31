@@ -2,19 +2,25 @@ package com.tuannt.api.services.impl;
 
 import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
+import com.rometools.rome.io.FeedException;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
 import com.tuannt.api.configs.ArticleConfig;
+import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.dtos.article.ArticleDetailDto;
 import com.tuannt.api.dtos.article.ArticleReqDto;
 import com.tuannt.api.dtos.article.ArticleResDto;
 import com.tuannt.api.exceptions.BadRequestException;
+import com.tuannt.api.exceptions.InternalException;
 import com.tuannt.api.services.ArticleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.net.URL;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +36,10 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 public class ArticleServiceImpl implements ArticleService {
+    private static final int CONNECT_TIMEOUT_MS = 5_000;
+    private static final int READ_TIMEOUT_MS = 10_000;
+    private static final String USER_AGENT = "Mozilla/5.0 (compatible; tuannt-api/1.0; +https://api.nttuan.dev)";
+
     private final ArticleConfig articleConfig;
 
     private static String extractImageUrl(String html) {
@@ -57,8 +67,7 @@ public class ArticleServiceImpl implements ArticleService {
         ArticleResDto articleResDto = new ArticleResDto();
         List<ArticleDetailDto> feedsList = new ArrayList<>();
         try {
-            URL feedSource = new URL(article.getUrl());
-            SyndFeed feed = new SyndFeedInput().build(new XmlReader(feedSource));
+            SyndFeed feed = readFeed(article.getUrl());
 
             for (SyndEntry entry : feed.getEntries()) {
                 String descriptionHtml = entry.getDescription() != null ? entry.getDescription().getValue() : "";
@@ -83,8 +92,23 @@ public class ArticleServiceImpl implements ArticleService {
             articleResDto.setCategory(articleReqDto.getCategory());
 
         } catch (Exception ex) {
-            log.error("Error fetching articles input: {} ex: ", ex.getMessage(), ex);
+            // Truoc day loi bi nuot va van tra 200 kem body rong mot nua, khien client tuong
+            // la "khong co bai" thay vi biet nguon RSS dang loi.
+            log.error("Error fetching articles source: {} category: {} url: {}",
+                    articleReqDto.getSource(), articleReqDto.getCategory(), article.getUrl(), ex);
+            throw new InternalException(ApiStatus.EXTERNAL_SERVER_ERROR);
         }
         return articleResDto;
+    }
+
+    private SyndFeed readFeed(String url) throws IOException, FeedException {
+        URLConnection connection = URI.create(url).toURL().openConnection();
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
+        // Mot so nguon RSS tu choi user-agent mac dinh cua Java.
+        connection.setRequestProperty("User-Agent", USER_AGENT);
+        try (InputStream stream = connection.getInputStream()) {
+            return new SyndFeedInput().build(new XmlReader(stream));
+        }
     }
 }

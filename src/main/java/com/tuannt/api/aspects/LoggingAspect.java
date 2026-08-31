@@ -12,6 +12,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,10 +26,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LoggingAspect {
     private final HttpServletRequest request;
+    private final CommonUtil commonUtil;
 
+    // Khong rang buoc tham so: pointcut cu dung args(.., body) nen method khong tham so
+    // (vd GET /v1/article/sources) khong bao gio duoc log.
     @SneakyThrows
-    @Around("execution(public * com.tuannt.api.controllers.*.*(..)) && args(.., body)")
-    public Object logControllers(final ProceedingJoinPoint joinPoint, final Object body) {
+    @Around("execution(public * com.tuannt.api.controllers.*.*(..))")
+    public Object logControllers(final ProceedingJoinPoint joinPoint) {
+        Object body = Arrays.stream(joinPoint.getArgs()).findFirst().orElse(null);
         String url = request.getRequestURL().toString();
         String httpMethod = request.getMethod();
         String qs = request.getQueryString() != null ? "?" + request.getQueryString() : "";
@@ -62,7 +67,7 @@ public class LoggingAspect {
             String headerValue = request.getHeader(headerName);
             headers.put(headerName, headerValue);
         }
-        return CommonUtil.objectToJsonString(headers);
+        return commonUtil.objectToJsonString(headers);
     }
 }
 

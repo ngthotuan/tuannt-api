@@ -33,6 +33,7 @@ public class AdyenServiceImpl implements AdyenService {
     }
 
     private final AdyenConfig adyenConfig;
+    private final CommonUtil commonUtil;
 
     @Override
     public RecurringPaymentResDto createOrder(CreateOrderReqDto req) {
@@ -66,7 +67,7 @@ public class AdyenServiceImpl implements AdyenService {
         }
         log.info("Recurring payment request: {}", rpReq);
 
-        DataResDto<RecurringPaymentResDto> res = CommonUtil.sendPostV2(adyenConfig.getUrlPayments(), getHeaders(), rpReq, RecurringPaymentResDto.class);
+        DataResDto<RecurringPaymentResDto> res = commonUtil.sendPostV2(adyenConfig.getUrlPayments(), getHeaders(), rpReq, RecurringPaymentResDto.class);
         log.info("Create order response: {}", res);
         return res.getData();
     }
@@ -76,9 +77,9 @@ public class AdyenServiceImpl implements AdyenService {
         Map<String, Map<String, String>> req = new HashMap<>();
         req.put("details", Map.of("redirectResult", redirectResult));
 
-        DataResDto<String> res = CommonUtil.sendPostV2(adyenConfig.getUrlDetails(), getHeaders(), req, String.class);
+        DataResDto<String> res = commonUtil.sendPostV2(adyenConfig.getUrlDetails(), getHeaders(), req, String.class);
         log.info("Redirect web response: {}", res);
-        SendRedirectResDto redirectResDto = CommonUtil.jsonStringToObject(res.getData(), SendRedirectResDto.class);
+        SendRedirectResDto redirectResDto = commonUtil.jsonStringToObject(res.getData(), SendRedirectResDto.class);
         if (redirectResDto != null && "Authorised".equalsIgnoreCase(redirectResDto.getResultCode())) {
             String shopperReference = redirectResDto.getShopperReference();
             String recurringDetailReference = redirectResDto.getRecurringDetailReference();
@@ -95,7 +96,7 @@ public class AdyenServiceImpl implements AdyenService {
         Map<String, String> body = new HashMap<>();
         body.put("shopperReference", shopperReference);
         body.put("merchantAccount", adyenConfig.getMerchantAccount());
-        DataResDto<String> res = CommonUtil.sendPostV2(adyenConfig.getUrlListDetails(), getHeaders(), body, String.class);
+        DataResDto<String> res = commonUtil.sendPostV2(adyenConfig.getUrlListDetails(), getHeaders(), body, String.class);
         return res.getData();
     }
 
@@ -105,7 +106,7 @@ public class AdyenServiceImpl implements AdyenService {
         log.info("DEL request: {}", shopperReference);
         String query = "?shopperReference=" + shopperReference + "&merchantAccount=" + adyenConfig.getMerchantAccount();
         String url = adyenConfig.getUrlPmMethod() + "/" + token + query;
-        DataResDto<String> res = CommonUtil.sendRequestV2(url, HttpMethod.DELETE, MediaType.APPLICATION_JSON, getHeaders(), "", String.class);
+        DataResDto<String> res = commonUtil.sendRequestV2(url, HttpMethod.DELETE, MediaType.APPLICATION_JSON, getHeaders(), "", String.class);
         return res.getData();
     }
 

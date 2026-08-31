@@ -22,6 +22,7 @@ public class TelegramNotificationService implements NotificationService {
 
     private static final int MAX_LENGTH = 4096;
     private final TelegramConfig telegramConfig;
+    private final CommonUtil commonUtil;
 
     @Override
     public boolean sentMessage(String to, String title, String message) {
@@ -30,33 +31,32 @@ public class TelegramNotificationService implements NotificationService {
                 log.warn("Telegram sentMessage is disable");
                 return false;
             }
-            if (message.length() > MAX_LENGTH) {
-                message = message.substring(0, MAX_LENGTH - 1);
+            String text = title != null ? String.format("<b>%s</b>%n%s", title, message) : message;
+            if (text.length() > MAX_LENGTH) {
+                text = text.substring(0, MAX_LENGTH - 1);
             }
             Map<String, String> body = Map.of(
                     "chat_id", to,
                     "parse_mode", "html",
-//                    "text", title != null ? String.format("<b>%s</b>\n%s", title, message) : message
-                    "text", message
+                    "text", text
             );
             String url = telegramConfig.getDomain() + "/bot" + telegramConfig.getToken() + "/sendMessage";
-            TelegramResp telegramResp = CommonUtil.sendPost(url, body, TelegramResp.class);
+            TelegramResp telegramResp = commonUtil.sendPost(url, body, TelegramResp.class);
             return telegramResp != null && telegramResp.isSuccess();
         } catch (Exception e) {
-            // đã có cơ chế sau 1 khoảng tg (100ms) lấy message gửi 1 lần
-            // tuy nhiên nếu gửi notification lên telegram liên tục nhiều quá bị block lỗi 429
-            TelegramResp telegramResp = CommonUtil.jsonStringToObject(e.getMessage(), TelegramResp.class);
-            if (telegramResp != null) {
-                log.error("Telegram sentMessage error blocked !!!");
-                if (!telegramResp.isSuccess() && telegramResp.getErrorCode() == 429) {
-                    long retryMs = telegramResp.retryMs();
-                    log.warn("Telegram sentMessage error, sleep: {} ms", retryMs);
-                    try {
-                        Thread.sleep(retryMs);
-                        sentMessage(title, message);
-                    } catch (InterruptedException interruptedException) {
-                        log.error("Telegram sentMessage retry exception: ", interruptedException);
-                    }
+            // Telegram tra 429 khi gui lien tuc qua nhieu; retry mot lan sau khoang cho no yeu cau.
+            TelegramResp telegramResp = commonUtil.jsonStringToObject(e.getMessage(), TelegramResp.class);
+            if (telegramResp != null && !telegramResp.isSuccess() && telegramResp.getErrorCode() == 429) {
+                long retryMs = telegramResp.retryMs();
+                log.warn("Telegram sentMessage rate limited, retry after: {} ms", retryMs);
+                try {
+                    Thread.sleep(retryMs);
+                    return sentMessage(to, title, message);
+                } catch (InterruptedException interruptedException) {
+                    // Khoi phuc co interrupt, neu khong thread pool se mat tin hieu huy.
+                    Thread.currentThread().interrupt();
+                    log.error("Telegram sentMessage retry interrupted", interruptedException);
+                    return false;
                 }
             }
             log.error("Telegram sentMessage exception: ", e);
