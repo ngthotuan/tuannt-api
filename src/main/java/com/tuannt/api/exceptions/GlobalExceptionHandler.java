@@ -14,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -73,6 +74,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(exceptionResponse, HttpStatus.BAD_REQUEST);
     }
 
+
+    /**
+     * Without this, a missing @RequestParam falls through to Spring's default ProblemDetail body,
+     * which is a different shape from every other error this API returns.
+     */
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
+                                                                          @Nullable HttpHeaders headers,
+                                                                          @Nullable HttpStatusCode status,
+                                                                          @Nullable WebRequest request) {
+        ApiError apiError = new ApiError(ApiStatus.BAD_REQUEST.name(), ex.getParameterName() + " is required");
+        log.warn("a handler missingServletRequestParameter: {}", apiError.getErrorMessage());
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
 
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(@Nullable NoHandlerFoundException ex,

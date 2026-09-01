@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Created by tuannt7 on 01/09/2026
@@ -44,7 +44,7 @@ public class ContactServiceImpl implements ContactService {
         entity.setMessage(req.getMessage().trim());
         entity.setIp(ip);
         entity.setUserAgent(truncate(userAgent, 500));
-        entity.setCreatedAt(LocalDateTime.now());
+        entity.setCreatedAt(Instant.now());
 
         ContactMessage saved = repository.save(entity);
         log.info("Contact message saved id: {} from: {}", saved.getId(), saved.getEmail());
