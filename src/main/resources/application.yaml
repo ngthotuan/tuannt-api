@@ -6,6 +6,13 @@ spring:
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # Sized for a single Basic dyno with light traffic. Connections are recycled well before the
+    # TiDB Serverless gateway can drop them as idle, so the pool never hands out a dead one.
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      max-lifetime: 300000
+      keepalive-time: 120000
   jpa:
     hibernate:
       ddl-auto: none
@@ -15,7 +22,6 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true
 cors:
   allowedOriginPatterns:
     - "https://nttuan.dev"
