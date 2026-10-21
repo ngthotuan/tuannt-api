@@ -19,6 +19,8 @@ public interface VocabSavedWordRepository extends JpaRepository<VocabSavedWord, 
 
     boolean existsByUserIdAndWordId(Long userId, Long wordId);
 
+    long countByUserId(Long userId);
+
     // Bulk JPQL deletes: the derived deleteBy* variants load every row before removing it.
     @Modifying
     @Query("delete from VocabSavedWord s where s.userId = :userId and s.wordId = :wordId")

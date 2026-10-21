@@ -1,8 +1,10 @@
 package com.tuannt.api.services.impl;
 
 import com.tuannt.api.constants.ApiStatus;
+import com.tuannt.api.dtos.PageResDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsReqDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsResDto;
+import com.tuannt.api.dtos.vocab.RandomVocabResDto;
 import com.tuannt.api.dtos.vocab.VocabWordDto;
 import com.tuannt.api.dtos.vocab.VocabWordReqDto;
 import com.tuannt.api.entities.VocabSavedWord;
@@ -14,7 +16,11 @@ import com.tuannt.api.repositories.VocabWordRepository;
 import com.tuannt.api.services.VocabService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -38,8 +44,27 @@ public class VocabServiceImpl implements VocabService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<VocabWordDto> listWords() {
-        return wordRepository.findAllByOrderByIdAsc().stream().map(this::toDto).toList();
+    public PageResDto<VocabWordDto> listWords(int page, int size, String query, boolean savedOnly, Long userId) {
+        // Newest first, so a word an admin just added shows up at the top of the first page.
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        String pattern = likePattern(query);
+        Page<VocabWord> result = savedOnly
+                ? wordRepository.searchSaved(userId, pattern, pageable)
+                : wordRepository.search(pattern, pageable);
+        return PageResDto.of(result, this::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RandomVocabResDto randomWords(int size, boolean savedOnly, Long userId) {
+        List<VocabWord> sample = savedOnly
+                ? wordRepository.randomSavedSample(userId, size)
+                : wordRepository.randomSample(size);
+        long total = savedOnly ? savedWordRepository.countByUserId(userId) : wordRepository.count();
+        return RandomVocabResDto.builder()
+                .items(sample.stream().map(this::toDto).toList())
+                .total(total)
+                .build();
     }
 
     @Override
@@ -129,6 +154,18 @@ public class VocabServiceImpl implements VocabService {
 
     private VocabWord findWord(Long id) {
         return wordRepository.findById(id).orElseThrow(() -> new NotFoundException(ApiStatus.WORD_NOT_FOUND));
+    }
+
+    /** null means "no filter"; LIKE wildcards typed by the user are matched literally. */
+    private String likePattern(String query) {
+        if (!StringUtils.hasText(query)) {
+            return null;
+        }
+        String escaped = query.trim().toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     /** Case-insensitive, stricter than the case-sensitive unique key, so "Career" and "career" collide. */
