@@ -38,7 +38,8 @@ fi
 : "${TELEGRAM_CHAT_ID:=dev-placeholder-chat-id}"
 : "${ADYEN_MERCHANT_ACCOUNT:=dev-placeholder-merchant}"
 : "${ADYEN_API_KEY:=dev-placeholder-api-key}"
-export TELEGRAM_TOKEN TELEGRAM_CHAT_ID ADYEN_MERCHANT_ACCOUNT ADYEN_API_KEY
+: "${JWT_SECRET:=dev-placeholder-jwt-secret-at-least-32-bytes}"
+export TELEGRAM_TOKEN TELEGRAM_CHAT_ID ADYEN_MERCHANT_ACCOUNT ADYEN_API_KEY JWT_SECRET
 
 export PATH="/opt/homebrew/bin:$PATH"
 export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/Cellar/openjdk@21/21.0.12/libexec/openjdk.jdk/Contents/Home}"

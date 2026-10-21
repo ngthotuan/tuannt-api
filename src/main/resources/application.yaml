@@ -22,6 +22,13 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+auth:
+  # Required: the app refuses to boot without it, like the Telegram/Adyen placeholders.
+  jwtSecret: ${JWT_SECRET}
+  tokenTtl: 30d
+  admin:
+    username: ${ADMIN_USERNAME:}
+    password: ${ADMIN_PASSWORD:}
 cors:
   allowedOriginPatterns:
     - "https://nttuan.dev"
@@ -31,6 +38,8 @@ cors:
   allowedMethods:
     - GET
     - POST
+    - PUT
+    - DELETE
     - OPTIONS
   allowedHeaders:
     - "*"

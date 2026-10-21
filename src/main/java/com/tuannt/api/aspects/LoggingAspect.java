@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -64,7 +65,10 @@ public class LoggingAspect {
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
+            // A bearer token in the log would be a working credential for its whole lifetime.
+            String headerValue = HttpHeaders.AUTHORIZATION.equalsIgnoreCase(headerName)
+                    ? "***"
+                    : request.getHeader(headerName);
             headers.put(headerName, headerValue);
         }
         return commonUtil.objectToJsonString(headers);
