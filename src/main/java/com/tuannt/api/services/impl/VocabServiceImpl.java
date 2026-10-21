@@ -4,7 +4,7 @@ import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.dtos.PageResDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsReqDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsResDto;
-import com.tuannt.api.dtos.vocab.RandomVocabResDto;
+import com.tuannt.api.dtos.vocab.PracticeSetResDto;
 import com.tuannt.api.dtos.vocab.VocabWordDto;
 import com.tuannt.api.dtos.vocab.VocabWordReqDto;
 import com.tuannt.api.entities.VocabSavedWord;
@@ -56,13 +56,26 @@ public class VocabServiceImpl implements VocabService {
 
     @Override
     @Transactional(readOnly = true)
-    public RandomVocabResDto randomWords(int size, boolean savedOnly, Long userId) {
+    public PracticeSetResDto randomWords(int size, boolean savedOnly, Long userId) {
         List<VocabWord> sample = savedOnly
                 ? wordRepository.randomSavedSample(userId, size)
                 : wordRepository.randomSample(size);
+        return practiceSet(sample, savedOnly, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PracticeSetResDto sequenceWords(int offset, int size, boolean savedOnly, Long userId) {
+        List<VocabWord> words = savedOnly
+                ? wordRepository.savedSequence(userId, offset, size)
+                : wordRepository.sequence(offset, size);
+        return practiceSet(words, savedOnly, userId);
+    }
+
+    private PracticeSetResDto practiceSet(List<VocabWord> words, boolean savedOnly, Long userId) {
         long total = savedOnly ? savedWordRepository.countByUserId(userId) : wordRepository.count();
-        return RandomVocabResDto.builder()
-                .items(sample.stream().map(this::toDto).toList())
+        return PracticeSetResDto.builder()
+                .items(words.stream().map(this::toDto).toList())
                 .total(total)
                 .build();
     }

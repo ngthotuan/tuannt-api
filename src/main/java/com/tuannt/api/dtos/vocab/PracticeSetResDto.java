@@ -12,8 +12,8 @@ import java.util.List;
 
 @Getter
 @Builder
-public class RandomVocabResDto extends BaseDto {
+public class PracticeSetResDto extends BaseDto {
     private List<VocabWordDto> items;
-    /** Size of the pool the sample was drawn from, so the UI can show "20 of 68". */
+    /** Size of the pool the set was drawn from, so the UI can show "20 of 68". */
     private long total;
 }

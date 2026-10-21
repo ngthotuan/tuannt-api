@@ -30,6 +30,19 @@ public interface VocabWordRepository extends JpaRepository<VocabWord, Long> {
             """)
     Page<VocabWord> searchSaved(Long userId, String pattern, Pageable pageable);
 
+    // Sequential practice walks the list oldest first (the original sheet order) from any
+    // position, which page numbers can't express, hence LIMIT/OFFSET.
+    @Query(value = "SELECT * FROM vocab_word ORDER BY id LIMIT :size OFFSET :offset", nativeQuery = true)
+    List<VocabWord> sequence(int offset, int size);
+
+    @Query(value = """
+            SELECT w.* FROM vocab_word w
+            JOIN vocab_saved_word s ON s.word_id = w.id
+            WHERE s.user_id = :userId
+            ORDER BY w.id LIMIT :size OFFSET :offset
+            """, nativeQuery = true)
+    List<VocabWord> savedSequence(Long userId, int offset, int size);
+
     // ORDER BY RAND() scans the whole table, which is fine at hundreds or a few thousand rows.
     @Query(value = "SELECT * FROM vocab_word ORDER BY RAND() LIMIT :size", nativeQuery = true)
     List<VocabWord> randomSample(int size);

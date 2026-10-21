@@ -5,7 +5,7 @@ import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.dtos.PageResDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsReqDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsResDto;
-import com.tuannt.api.dtos.vocab.RandomVocabResDto;
+import com.tuannt.api.dtos.vocab.PracticeSetResDto;
 import com.tuannt.api.dtos.vocab.VocabWordDto;
 import com.tuannt.api.dtos.vocab.VocabWordReqDto;
 import com.tuannt.api.exceptions.UnauthorizedException;
@@ -63,13 +63,25 @@ public class VocabController {
 
     /** A random practice set, so the client never has to download the whole list to shuffle it. */
     @GetMapping("/words/random")
-    public RandomVocabResDto randomWords(
+    public PracticeSetResDto randomWords(
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "size must be at least 1")
             @Max(value = 200, message = "size must be at most 200") int size,
             @RequestParam(defaultValue = "false") boolean saved,
             @AuthenticationPrincipal Jwt jwt) {
         return vocabService.randomWords(size, saved, saved ? requireUserId(jwt) : null);
+    }
+
+    /** The next practice set in list order (oldest first), from a zero-based offset. */
+    @GetMapping("/words/sequence")
+    public PracticeSetResDto sequenceWords(
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "offset must be at least 0") int offset,
+            @RequestParam(defaultValue = "20")
+            @Min(value = 1, message = "size must be at least 1")
+            @Max(value = 200, message = "size must be at most 200") int size,
+            @RequestParam(defaultValue = "false") boolean saved,
+            @AuthenticationPrincipal Jwt jwt) {
+        return vocabService.sequenceWords(offset, size, saved, saved ? requireUserId(jwt) : null);
     }
 
     @PostMapping("/words")
