@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Created by tuannt7 on 21/10/2026
  * <p>
- * Only the vocab write paths, saved words and account endpoints need a token; everything that
+ * Only the vocab write paths, saved words, review and account endpoints need a token; everything that
  * was public before this existed stays public. Rules live here as URL patterns rather than
  * {@code @PreAuthorize}, because a method-level AccessDeniedException would reach
  * GlobalExceptionHandler's Throwable handler and come back as a 500.
@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, ApiPaths.API_VOCAB_PATH + "/words/**").hasRole(admin)
                         .requestMatchers(HttpMethod.DELETE, ApiPaths.API_VOCAB_PATH + "/words/**").hasRole(admin)
                         .requestMatchers(ApiPaths.API_VOCAB_PATH + "/saved/**").authenticated()
+                        .requestMatchers(ApiPaths.API_VOCAB_REVIEW_PATH, ApiPaths.API_VOCAB_REVIEW_PATH + "/**").authenticated()
                         .requestMatchers(ApiPaths.API_AUTH_PATH + "/me").authenticated()
                         .requestMatchers(ApiPaths.API_AUTH_PATH + "/password").authenticated()
                         .anyRequest().permitAll())

@@ -11,6 +11,8 @@ import com.tuannt.api.entities.VocabSavedWord;
 import com.tuannt.api.entities.VocabWord;
 import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.NotFoundException;
+import com.tuannt.api.repositories.VocabReviewLogRepository;
+import com.tuannt.api.repositories.VocabReviewRepository;
 import com.tuannt.api.repositories.VocabSavedWordRepository;
 import com.tuannt.api.repositories.VocabWordRepository;
 import com.tuannt.api.services.VocabService;
@@ -41,6 +43,8 @@ import java.util.stream.Collectors;
 public class VocabServiceImpl implements VocabService {
     private final VocabWordRepository wordRepository;
     private final VocabSavedWordRepository savedWordRepository;
+    private final VocabReviewRepository reviewRepository;
+    private final VocabReviewLogRepository reviewLogRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -133,7 +137,10 @@ public class VocabServiceImpl implements VocabService {
     @Transactional
     public void deleteWord(Long id) {
         VocabWord word = findWord(id);
+        // No foreign keys: every per-user row that points at the word goes with it.
         savedWordRepository.deleteByWordId(id);
+        reviewRepository.deleteByWordId(id);
+        reviewLogRepository.deleteByWordId(id);
         wordRepository.delete(word);
         log.info("Vocab word deleted id: {} en: {}", id, word.getEn());
     }

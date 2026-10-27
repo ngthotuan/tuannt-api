@@ -493,6 +493,110 @@
       ]
     },
     {
+      "name": "Vocab (review)",
+      "description": "Spaced repetition (simplified SM-2). Needs any logged-in user (run Auth → Login first). State is per user; grading writes real review history.",
+      "item": [
+        {
+          "name": "Review queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/review/queue?size=20&scope=saved",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "review",
+                "queue"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "scope",
+                  "value": "saved"
+                }
+              ]
+            },
+            "description": "`size` 1-100 (default 20); `scope` `saved` (default, the user's saved words) or `all`. Overdue cards first, oldest due first, then never-reviewed words (at most 10 per call) to fill up to `size`. Response: `{ items: [{ word: {id,en,vi}, review: {dueAt, intervalDays, repetitions, lapses, isNew} }], dueCount, newCount }`; `dueAt` is null for new words."
+          }
+        },
+        {
+          "name": "Grade word",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "review"
+              ]
+            },
+            "description": "`grade` is AGAIN, HARD, GOOD or EASY. Creates the review state on the first answer. AGAIN makes the word due again in 10 minutes; passes schedule it 1, then 6, then interval x ease days out. Response: `{ wordId, dueAt, intervalDays, repetitions, lapses, ease }`. 404 WORD_NOT_FOUND for an unknown word.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wordId\": {{wordId}},\n  \"grade\": \"GOOD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the word Add words just created.",
+                  "if (!pm.collectionVariables.get('wordId')) {",
+                  "    console.warn('wordId is empty: run Vocab (admin) → Add words first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Review stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/review/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "review",
+                "stats"
+              ]
+            },
+            "description": "`{ dueNow, dueToday, learned, mature, totalReviews, streakDays }`. Days are UTC; `learned` = repetitions >= 1, `mature` = interval >= 21 days, and the streak survives until a whole UTC day passes without a review."
+          }
+        }
+      ]
+    },
+    {
       "name": "Vocab (admin)",
       "description": "ADMIN role only; a USER token gets 403. These change real data.",
       "item": [
@@ -610,7 +714,7 @@
                 "{{wordId}}"
               ]
             },
-            "description": "Deletes the word in `wordId` (only one Add words created) and removes it from every user's saved list. 204."
+            "description": "Deletes the word in `wordId` (only one Add words created) and removes it from every user's saved list and review history. 204."
           },
           "event": [
             {
@@ -817,7 +921,7 @@
                 "{{userId}}"
               ]
             },
-            "description": "204. Also deletes that user's saved words."
+            "description": "204. Also deletes that user's saved words and review history."
           },
           "event": [
             {

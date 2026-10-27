@@ -15,6 +15,8 @@ import com.tuannt.api.exceptions.NotFoundException;
 import com.tuannt.api.exceptions.TooManyRequestsException;
 import com.tuannt.api.exceptions.UnauthorizedException;
 import com.tuannt.api.repositories.AppUserRepository;
+import com.tuannt.api.repositories.VocabReviewLogRepository;
+import com.tuannt.api.repositories.VocabReviewRepository;
 import com.tuannt.api.repositories.VocabSavedWordRepository;
 import com.tuannt.api.services.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +55,8 @@ public class AuthServiceImpl implements AuthService {
     private final AuthConfig authConfig;
     private final RateLimiter rateLimiter;
     private final VocabSavedWordRepository savedWordRepository;
+    private final VocabReviewRepository reviewRepository;
+    private final VocabReviewLogRepository reviewLogRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -182,6 +186,8 @@ public class AuthServiceImpl implements AuthService {
         }
         // No foreign keys in the schema, so dependent rows are removed explicitly.
         savedWordRepository.deleteByUserId(userId);
+        reviewRepository.deleteByUserId(userId);
+        reviewLogRepository.deleteByUserId(userId);
         userRepository.delete(user);
         log.info("User deleted id: {} username: {} by user id: {}", userId, user.getUsername(), actorId);
     }

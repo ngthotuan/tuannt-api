@@ -10,6 +10,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.time.Clock;
+
 
 /**
  * Created by tuannt7 on 02/05/2023
@@ -34,6 +36,12 @@ public class GlobalConfig {
         };
     }
 
+
+    /** Injected rather than calling Instant.now(), so review scheduling can run on a fixed clock in tests. */
+    @Bean
+    public Clock clock() {
+        return Clock.systemUTC();
+    }
 
     @Bean
     public ObjectMapper objectMapper() {

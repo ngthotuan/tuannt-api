@@ -54,4 +54,23 @@ public interface VocabWordRepository extends JpaRepository<VocabWord, Long> {
             ORDER BY RAND() LIMIT :size
             """, nativeQuery = true)
     List<VocabWord> randomSavedSample(Long userId, int size);
+
+    // Words the user has never reviewed, oldest first like sequential practice. savedOnly=false
+    // skips the saved-word filter, so one query serves both review queue scopes.
+    @Query("""
+            select w from VocabWord w
+            where not exists (select 1 from VocabReview r where r.wordId = w.id and r.userId = :userId)
+              and (:savedOnly = false
+                   or exists (select 1 from VocabSavedWord s where s.wordId = w.id and s.userId = :userId))
+            order by w.id
+            """)
+    List<VocabWord> findUnreviewed(Long userId, boolean savedOnly, Pageable pageable);
+
+    @Query("""
+            select count(w) from VocabWord w
+            where not exists (select 1 from VocabReview r where r.wordId = w.id and r.userId = :userId)
+              and (:savedOnly = false
+                   or exists (select 1 from VocabSavedWord s where s.wordId = w.id and s.userId = :userId))
+            """)
+    long countUnreviewed(Long userId, boolean savedOnly);
 }

@@ -8,6 +8,8 @@ import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.BaseException;
 import com.tuannt.api.exceptions.UnauthorizedException;
 import com.tuannt.api.repositories.AppUserRepository;
+import com.tuannt.api.repositories.VocabReviewLogRepository;
+import com.tuannt.api.repositories.VocabReviewRepository;
 import com.tuannt.api.repositories.VocabSavedWordRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -30,8 +32,10 @@ class AuthServiceImplTest {
     private final PasswordEncoder encoder = new BCryptPasswordEncoder(4);
     private final AppUserRepository users = mock(AppUserRepository.class);
     private final VocabSavedWordRepository savedWords = mock(VocabSavedWordRepository.class);
+    private final VocabReviewRepository reviews = mock(VocabReviewRepository.class);
+    private final VocabReviewLogRepository reviewLogs = mock(VocabReviewLogRepository.class);
     private final AuthServiceImpl service = new AuthServiceImpl(users, encoder, mock(JwtEncoder.class),
-            new AuthConfig(), new RateLimiter(), savedWords);
+            new AuthConfig(), new RateLimiter(), savedWords, reviews, reviewLogs);
 
     @Test
     void adminCannotDemoteOrDeleteThemselves() {
@@ -65,13 +69,15 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void deletingAUserAlsoDropsTheirSavedWords() {
+    void deletingAUserAlsoDropsTheirSavedWordsAndReviews() {
         AppUser target = user(5L, UserRole.USER);
         when(users.findById(5L)).thenReturn(Optional.of(target));
 
         service.deleteUser(1L, 5L);
 
         verify(savedWords).deleteByUserId(5L);
+        verify(reviews).deleteByUserId(5L);
+        verify(reviewLogs).deleteByUserId(5L);
         verify(users).delete(target);
     }
 
