@@ -38,3 +38,6 @@ tmp/
 dist/
 conf/
 logs/
+
+# Claude Code agent worktrees
+.claude/
