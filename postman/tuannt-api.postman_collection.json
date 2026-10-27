@@ -46,6 +46,36 @@
       "key": "newUserPassword",
       "value": "",
       "description": "Password for Admin → Create user (8 or more characters, at most 72 bytes). Left empty on purpose."
+    },
+    {
+      "key": "postId",
+      "value": "",
+      "description": "Set by Blog (admin) → Create post. Requests that use it are skipped while it is empty."
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "description": "Set by Projects (admin) → Create project. Requests that use it are skipped while it is empty."
+    },
+    {
+      "key": "messageId",
+      "value": "",
+      "description": "Fill by hand with an id from Admin: contact inbox → List messages. Never set automatically: these are real visitor messages."
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "description": "Set by Admin → Create user. Requests that use it are skipped while it is empty."
+    },
+    {
+      "key": "currentPassword",
+      "value": "",
+      "description": "For Auth → Change own password. Left empty on purpose."
+    },
+    {
+      "key": "newPassword",
+      "value": "",
+      "description": "For Auth → Change own password (8 or more characters, at most 72 bytes). Left empty on purpose."
     }
   ],
   "item": [
@@ -122,6 +152,39 @@
               ]
             },
             "description": "Current user from the token. 401 if the token is missing, invalid, expired, or its account was deleted."
+          }
+        },
+        {
+          "name": "Change own password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "password"
+              ]
+            },
+            "description": "Any logged-in user. 204; 401 `INVALID_CREDENTIALS` if `currentPassword` is wrong. Rate limited like login. Fill `currentPassword` / `newPassword` first; this changes the real account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{currentPassword}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         }
       ]
@@ -569,8 +632,27 @@
     },
     {
       "name": "Admin",
-      "description": "ADMIN role only.",
+      "description": "ADMIN role only. Guards: nobody can demote or delete themselves (400 `CANNOT_CHANGE_SELF`), and the last ADMIN can never be demoted or deleted (400 `LAST_ADMIN`). Existing tokens are not revoked by a demotion or deletion.",
       "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "`[{ id, username, role, createdAt }]`, oldest first. Never includes password hashes."
+          }
+        },
         {
           "name": "Create user",
           "request": {
@@ -592,7 +674,7 @@
                 "users"
               ]
             },
-            "description": "username: 3-50 of letters, digits, `.` `_` `-`. password: 8-100 chars. role: USER (default) or ADMIN. 400 if the username exists. Creates a real account in the shared database. Fill `newUserPassword` first.",
+            "description": "username: 3-50 of letters, digits, `.` `_` `-`. password: 8-100 chars. role: USER (default) or ADMIN. 400 if the username exists. Creates a real account in the shared database. Fill `newUserPassword` first. Stores the new id in `userId`.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"new-user\",\n  \"password\": \"{{newUserPassword}}\",\n  \"role\": \"USER\"\n}",
@@ -602,7 +684,822 @@
                 }
               }
             }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ok = pm.response.code === 201;",
+                  "// Clear rather than keep a stale id when nothing was created.",
+                  "pm.collectionVariables.set('userId', ok ? pm.response.json().id : '');",
+                  "pm.test('created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset user password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/users/{{userId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{userId}}",
+                "password"
+              ]
+            },
+            "description": "204. Same rules as create: 8-100 characters and at most 72 bytes. Fill `newUserPassword` first.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"{{newUserPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Admin → Create user produced.",
+                  "if (!pm.collectionVariables.get('userId')) {",
+                  "    console.warn('userId is empty: run Admin → Create user first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change user role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/users/{{userId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{userId}}",
+                "role"
+              ]
+            },
+            "description": "Returns the user. USER or ADMIN.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Admin → Create user produced.",
+                  "if (!pm.collectionVariables.get('userId')) {",
+                  "    console.warn('userId is empty: run Admin → Create user first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "204. Also deletes that user's saved words."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Admin → Create user produced.",
+                  "if (!pm.collectionVariables.get('userId')) {",
+                  "    console.warn('userId is empty: run Admin → Create user first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin: contact inbox",
+      "description": "ADMIN role only.",
+      "item": [
+        {
+          "name": "List messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/contact-messages?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "contact-messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Zero-based"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "1-100, default 20"
+                },
+                {
+                  "key": "unread",
+                  "value": "true",
+                  "description": "Only messages never marked read",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Newest first: `{ items[{ id, name, email, subject, message, ip, createdAt, readAt }], page, size, total, totalPages }`. `unread=true&size=1` gives the unread count in `total`. Copy an id from here into `messageId` to act on it."
           }
+        },
+        {
+          "name": "Mark read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/contact-messages/{{messageId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "contact-messages",
+                "{{messageId}}",
+                "read"
+              ]
+            },
+            "description": "Idempotent; returns the message with `readAt`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record you picked from Admin: contact inbox → List messages produced.",
+                  "if (!pm.collectionVariables.get('messageId')) {",
+                  "    console.warn('messageId is empty: set it by hand to an id from List messages. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark unread",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/contact-messages/{{messageId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "contact-messages",
+                "{{messageId}}",
+                "read"
+              ]
+            },
+            "description": "Clears `readAt`; returns the message."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record you picked from Admin: contact inbox → List messages produced.",
+                  "if (!pm.collectionVariables.get('messageId')) {",
+                  "    console.warn('messageId is empty: set it by hand to an id from List messages. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete message",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/contact-messages/{{messageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "contact-messages",
+                "{{messageId}}"
+              ]
+            },
+            "description": "204. Permanent."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record you picked from Admin: contact inbox → List messages produced.",
+                  "if (!pm.collectionVariables.get('messageId')) {",
+                  "    console.warn('messageId is empty: set it by hand to an id from List messages. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Blog (public)",
+      "description": "No login needed. Only PUBLISHED posts are visible here.",
+      "item": [
+        {
+          "name": "List posts (paged)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/posts?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Zero-based"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "1-100, default 20"
+                },
+                {
+                  "key": "tag",
+                  "value": "java",
+                  "description": "Optional; normalised like stored tags",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Published posts, newest first, without `content`. Response: `{ items[summary], page, size, total, totalPages }`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Tags",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/posts/tags",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "posts",
+                "tags"
+              ]
+            },
+            "description": "Tags of published posts with counts, most used first: `[{ tag, count }]`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get post by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/posts/hello-world",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "posts",
+                "hello-world"
+              ]
+            },
+            "description": "Full post incl. Markdown `content`. 404 `POST_NOT_FOUND` for a missing or unpublished slug. `{ id, slug, title, excerpt, content, coverUrl, tags[], status, publishedAt, createdAt, updatedAt }`; timestamps are epoch millis, publishedAt is null until first publish.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blog (admin)",
+      "description": "ADMIN role only. Changes that touch published content trigger the Pages deploy hook when one is configured. These change real data.",
+      "item": [
+        {
+          "name": "List posts (all statuses)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Zero-based"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "1-100, default 20"
+                },
+                {
+                  "key": "status",
+                  "value": "DRAFT",
+                  "description": "DRAFT or PUBLISHED; omit for all",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Drafts included, most recently updated first, without `content`."
+          }
+        },
+        {
+          "name": "Create post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts"
+              ]
+            },
+            "description": "201 with the full post. Empty `slug` derives one from the title (Vietnamese diacritics stripped). 400 `SLUG_TAKEN` on a clash. Tags are normalised to kebab-case. Stores the id in `postId`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"\",\n  \"title\": \"Bài viết thử từ Postman\",\n  \"excerpt\": \"Short summary shown in lists\",\n  \"content\": \"# Hello\\n\\nMarkdown body.\",\n  \"coverUrl\": \"\",\n  \"tags\": [\n    \"Postman\",\n    \"test\"\n  ],\n  \"status\": \"DRAFT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ok = pm.response.code === 201;",
+                  "// Clear rather than keep a stale id when nothing was created.",
+                  "pm.collectionVariables.set('postId', ok ? pm.response.json().id : '');",
+                  "pm.test('created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get post",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts/{{postId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts",
+                "{{postId}}"
+              ]
+            },
+            "description": "Full post by id, any status. `{ id, slug, title, excerpt, content, coverUrl, tags[], status, publishedAt, createdAt, updatedAt }`; timestamps are epoch millis, publishedAt is null until first publish."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Blog (admin) → Create post produced.",
+                  "if (!pm.collectionVariables.get('postId')) {",
+                  "    console.warn('postId is empty: run Blog (admin) → Create post first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update post (publish)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts/{{postId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts",
+                "{{postId}}"
+              ]
+            },
+            "description": "Replaces every field. Empty `slug` keeps the current one. Setting `status` to PUBLISHED publishes (publishedAt is set once); DRAFT unpublishes.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"\",\n  \"title\": \"Bài viết thử từ Postman\",\n  \"excerpt\": \"Short summary shown in lists\",\n  \"content\": \"# Hello\\n\\nMarkdown body.\",\n  \"coverUrl\": \"\",\n  \"tags\": [\n    \"Postman\",\n    \"test\"\n  ],\n  \"status\": \"PUBLISHED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Blog (admin) → Create post produced.",
+                  "if (!pm.collectionVariables.get('postId')) {",
+                  "    console.warn('postId is empty: run Blog (admin) → Create post first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts/{{postId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts",
+                "{{postId}}"
+              ]
+            },
+            "description": "204."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Blog (admin) → Create post produced.",
+                  "if (!pm.collectionVariables.get('postId')) {",
+                  "    console.warn('postId is empty: run Blog (admin) → Create post first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Projects (public)",
+      "description": "No login needed.",
+      "item": [
+        {
+          "name": "List projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "projects"
+              ]
+            },
+            "description": "Visible projects, featured first, then `sortOrder` ascending. A plain array of `{ id, slug, name, summary, description, tech[], repoUrl, demoUrl, imageUrl, featured, sortOrder, visible, createdAt, updatedAt }`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects (admin)",
+      "description": "ADMIN role only. Changes to visible projects trigger the Pages deploy hook when configured.",
+      "item": [
+        {
+          "name": "List projects (incl. hidden)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "projects"
+              ]
+            },
+            "description": "Same order as the public list, hidden ones included."
+          }
+        },
+        {
+          "name": "Create project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "projects"
+              ]
+            },
+            "description": "201. Empty `slug` derives one from the name; 400 `SLUG_TAKEN` on a clash. URLs must be http(s) or start with `/`. Stores the id in `projectId`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"\",\n  \"name\": \"Postman test project\",\n  \"summary\": \"Created from Postman\",\n  \"description\": \"Markdown, optional.\",\n  \"tech\": [\n    \"Spring Boot\",\n    \"React\"\n  ],\n  \"repoUrl\": \"https://github.com/ngthotuan/tuannt-api\",\n  \"demoUrl\": \"\",\n  \"imageUrl\": \"\",\n  \"featured\": false,\n  \"sortOrder\": 0,\n  \"visible\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ok = pm.response.code === 201;",
+                  "// Clear rather than keep a stale id when nothing was created.",
+                  "pm.collectionVariables.set('projectId', ok ? pm.response.json().id : '');",
+                  "pm.test('created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "projects",
+                "{{projectId}}"
+              ]
+            },
+            "description": "`{ id, slug, name, summary, description, tech[], repoUrl, demoUrl, imageUrl, featured, sortOrder, visible, createdAt, updatedAt }`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Projects (admin) → Create project produced.",
+                  "if (!pm.collectionVariables.get('projectId')) {",
+                  "    console.warn('projectId is empty: run Projects (admin) → Create project first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update project",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "projects",
+                "{{projectId}}"
+              ]
+            },
+            "description": "Replaces every field. Empty `slug` keeps the current one.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"\",\n  \"name\": \"Postman test project\",\n  \"summary\": \"Created from Postman\",\n  \"description\": \"Markdown, optional.\",\n  \"tech\": [\n    \"Spring Boot\",\n    \"React\"\n  ],\n  \"repoUrl\": \"https://github.com/ngthotuan/tuannt-api\",\n  \"demoUrl\": \"\",\n  \"imageUrl\": \"\",\n  \"featured\": false,\n  \"sortOrder\": 0,\n  \"visible\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Projects (admin) → Create project produced.",
+                  "if (!pm.collectionVariables.get('projectId')) {",
+                  "    console.warn('projectId is empty: run Projects (admin) → Create project first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete project",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "projects",
+                "{{projectId}}"
+              ]
+            },
+            "description": "204."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the record Projects (admin) → Create project produced.",
+                  "if (!pm.collectionVariables.get('projectId')) {",
+                  "    console.warn('projectId is empty: run Projects (admin) → Create project first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

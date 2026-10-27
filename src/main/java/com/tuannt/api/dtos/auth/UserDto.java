@@ -15,4 +15,6 @@ public class UserDto extends BaseDto {
     private Long id;
     private String username;
     private UserRole role;
+    /** Epoch millis. */
+    private Long createdAt;
 }

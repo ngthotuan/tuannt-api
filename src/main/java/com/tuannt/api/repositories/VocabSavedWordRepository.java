@@ -29,4 +29,8 @@ public interface VocabSavedWordRepository extends JpaRepository<VocabSavedWord, 
     @Modifying
     @Query("delete from VocabSavedWord s where s.wordId = :wordId")
     void deleteByWordId(Long wordId);
+
+    @Modifying
+    @Query("delete from VocabSavedWord s where s.userId = :userId")
+    void deleteByUserId(Long userId);
 }

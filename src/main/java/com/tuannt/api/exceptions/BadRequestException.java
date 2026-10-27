@@ -11,6 +11,11 @@ public class BadRequestException extends BaseException {
         super(HttpStatus.BAD_REQUEST, statusEnum);
     }
 
+    /** Keeps a specific errorCode for the client while adding detail such as the clashing value. */
+    public BadRequestException(ApiStatus statusEnum, String message) {
+        super(HttpStatus.BAD_REQUEST, new ApiError(statusEnum.name(), message));
+    }
+
     public BadRequestException(String message) {
         super(HttpStatus.BAD_REQUEST, new ApiError(ApiStatus.BAD_REQUEST.name(), message));
     }

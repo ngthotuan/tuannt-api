@@ -3,6 +3,7 @@ package com.tuannt.api.exceptions;
 import com.tuannt.api.constants.ApiStatus;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -98,6 +99,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                                           @Nullable WebRequest request) {
         ApiError apiError = new ApiError(ApiStatus.BAD_REQUEST.name(), ex.getParameterName() + " is required");
         log.warn("a handler missingServletRequestParameter: {}", apiError.getErrorMessage());
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    /** A non-numeric id or an unknown enum value in the URL, e.g. ?status=ARCHIVED. */
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex,
+                                                        @Nullable HttpHeaders headers,
+                                                        @Nullable HttpStatusCode status,
+                                                        @Nullable WebRequest request) {
+        String name = ex.getPropertyName() != null ? ex.getPropertyName() : "parameter";
+        ApiError apiError = new ApiError(ApiStatus.BAD_REQUEST.name(), name + " has an invalid value");
+        log.warn("a handler typeMismatch: {}", apiError.getErrorMessage());
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 

@@ -1,12 +1,19 @@
 package com.tuannt.api.services.impl;
 
+import com.tuannt.api.constants.ApiStatus;
+import com.tuannt.api.dtos.PageResDto;
+import com.tuannt.api.dtos.contact.ContactMessageDto;
 import com.tuannt.api.dtos.contact.ContactMessageReqDto;
 import com.tuannt.api.entities.ContactMessage;
+import com.tuannt.api.exceptions.NotFoundException;
 import com.tuannt.api.exceptions.TooManyRequestsException;
 import com.tuannt.api.repositories.ContactMessageRepository;
 import com.tuannt.api.services.ContactService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +53,59 @@ public class ContactServiceImpl implements ContactService {
 
         ContactMessage saved = repository.save(entity);
         log.info("Contact message saved id: {} from: {}", saved.getId(), saved.getEmail());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResDto<ContactMessageDto> list(int page, int size, boolean unreadOnly) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
+        Page<ContactMessage> result = unreadOnly
+                ? repository.findByReadAtIsNull(pageable)
+                : repository.findAll(pageable);
+        return PageResDto.of(result, this::toDto);
+    }
+
+    @Override
+    @Transactional
+    public ContactMessageDto markRead(Long id) {
+        ContactMessage message = findMessage(id);
+        if (message.getReadAt() == null) {
+            message.setReadAt(Instant.now());
+        }
+        return toDto(message);
+    }
+
+    @Override
+    @Transactional
+    public ContactMessageDto markUnread(Long id) {
+        ContactMessage message = findMessage(id);
+        message.setReadAt(null);
+        return toDto(message);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        ContactMessage message = findMessage(id);
+        repository.delete(message);
+        log.info("Contact message deleted id: {}", id);
+    }
+
+    private ContactMessage findMessage(Long id) {
+        return repository.findById(id).orElseThrow(() -> new NotFoundException(ApiStatus.MESSAGE_NOT_FOUND));
+    }
+
+    private ContactMessageDto toDto(ContactMessage m) {
+        return ContactMessageDto.builder()
+                .id(m.getId())
+                .name(m.getName())
+                .email(m.getEmail())
+                .subject(m.getSubject())
+                .message(m.getMessage())
+                .ip(m.getIp())
+                .createdAt(m.getCreatedAt().toEpochMilli())
+                .readAt(m.getReadAt() == null ? null : m.getReadAt().toEpochMilli())
+                .build();
     }
 
 

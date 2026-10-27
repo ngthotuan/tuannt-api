@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, ApiPaths.API_VOCAB_PATH + "/words/**").hasRole(admin)
                         .requestMatchers(ApiPaths.API_VOCAB_PATH + "/saved/**").authenticated()
                         .requestMatchers(ApiPaths.API_AUTH_PATH + "/me").authenticated()
+                        .requestMatchers(ApiPaths.API_AUTH_PATH + "/password").authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(o -> o
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))

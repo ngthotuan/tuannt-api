@@ -44,4 +44,8 @@ public class ContactMessage {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    /** Null until an admin opens it in the inbox. */
+    @Column(name = "read_at")
+    private Instant readAt;
 }

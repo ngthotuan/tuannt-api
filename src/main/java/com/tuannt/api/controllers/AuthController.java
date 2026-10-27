@@ -1,6 +1,7 @@
 package com.tuannt.api.controllers;
 
 import com.tuannt.api.constants.ApiPaths;
+import com.tuannt.api.dtos.auth.ChangePasswordReqDto;
 import com.tuannt.api.dtos.auth.LoginReqDto;
 import com.tuannt.api.dtos.auth.LoginResDto;
 import com.tuannt.api.dtos.auth.UserDto;
@@ -10,13 +11,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -41,6 +45,13 @@ public class AuthController {
     @GetMapping("/me")
     public UserDto me(@AuthenticationPrincipal Jwt jwt) {
         return authService.me(Long.valueOf(jwt.getSubject()));
+    }
+
+    /** Existing tokens stay valid until they expire; there is no token revocation. */
+    @PutMapping("/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(@Valid @RequestBody ChangePasswordReqDto req, @AuthenticationPrincipal Jwt jwt) {
+        authService.changeOwnPassword(Long.valueOf(jwt.getSubject()), req);
     }
 
 }
