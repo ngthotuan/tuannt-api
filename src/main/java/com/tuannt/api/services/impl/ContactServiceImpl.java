@@ -5,7 +5,6 @@ import com.tuannt.api.entities.ContactMessage;
 import com.tuannt.api.exceptions.TooManyRequestsException;
 import com.tuannt.api.repositories.ContactMessageRepository;
 import com.tuannt.api.services.ContactService;
-import com.tuannt.api.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,7 +25,6 @@ public class ContactServiceImpl implements ContactService {
     private static final Duration WINDOW = Duration.ofHours(1);
 
     private final ContactMessageRepository repository;
-    private final NotificationService notificationService;
     private final RateLimiter rateLimiter;
 
     @Override
@@ -48,24 +46,8 @@ public class ContactServiceImpl implements ContactService {
 
         ContactMessage saved = repository.save(entity);
         log.info("Contact message saved id: {} from: {}", saved.getId(), saved.getEmail());
-
-        notify(saved);
     }
 
-    /**
-     * Best-effort: the message is already persisted, so a failing notification must not turn a
-     * successful submission into an error for the visitor. Telegram currently runs on placeholder
-     * credentials, so this is expected to fail until real ones are configured.
-     */
-    private void notify(ContactMessage saved) {
-        try {
-            String body = String.format("From: %s <%s>%nSubject: %s%n%n%s",
-                    saved.getName(), saved.getEmail(), saved.getSubject(), saved.getMessage());
-            notificationService.sentMessage("New contact message", body);
-        } catch (Exception e) {
-            log.warn("Contact notification failed for id: {} - {}", saved.getId(), e.getMessage());
-        }
-    }
 
     private String truncate(String value, int max) {
         if (value == null) return null;

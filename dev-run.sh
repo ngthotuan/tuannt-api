@@ -32,14 +32,8 @@ else
     exit 1
 fi
 
-# Telegram/Adyen placeholders are not in ~/.env-dev; fall back to dummy dev values
-# so Spring's ${...} placeholder resolution doesn't fail on startup.
-: "${TELEGRAM_TOKEN:=dev-placeholder-telegram-token}"
-: "${TELEGRAM_CHAT_ID:=dev-placeholder-chat-id}"
-: "${ADYEN_MERCHANT_ACCOUNT:=dev-placeholder-merchant}"
-: "${ADYEN_API_KEY:=dev-placeholder-api-key}"
 : "${JWT_SECRET:=dev-placeholder-jwt-secret-at-least-32-bytes}"
-export TELEGRAM_TOKEN TELEGRAM_CHAT_ID ADYEN_MERCHANT_ACCOUNT ADYEN_API_KEY JWT_SECRET
+export JWT_SECRET
 
 export PATH="/opt/homebrew/bin:$PATH"
 export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/Cellar/openjdk@21/21.0.12/libexec/openjdk.jdk/Contents/Home}"

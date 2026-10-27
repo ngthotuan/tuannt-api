@@ -22,10 +22,6 @@ public enum ApiStatus {
     TOO_MANY_REQUESTS("Too many requests, please try again later"),
     INTERNAL_SERVER_ERROR("Server error"),
     EXTERNAL_SERVER_ERROR("External service error"),
-    INVALID_TTL("Invalid ttl"),
-    INVALID_SIGNATURE("Invalid signature"),
-    DUPLICATE_REFERENCE("Duplicate reference id"),
-    TRANSACTION_NOT_FOUND("Transaction not found"),
     ;
     private final String message;
 }

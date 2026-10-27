@@ -764,7 +764,7 @@
                 "contact"
               ]
             },
-            "description": "Stores a real contact message (and tries a Telegram ping, which fails quietly on placeholder credentials). 201, no body. Rate limited to 5/hour per IP.",
+            "description": "Stores a real contact message (read it in the database; there is no notification). 201, no body. Rate limited to 5/hour per IP.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Postman\",\n  \"email\": \"postman@example.com\",\n  \"subject\": \"Test from Postman\",\n  \"message\": \"Hello\"\n}",
@@ -782,148 +782,49 @@
       ]
     },
     {
-      "name": "Adyen (non-functional)",
-      "description": "Runs on placeholder Adyen credentials in every environment, so these fail until real keys are configured. Kept for completeness.",
+      "name": "Ops",
+      "description": "Public operational endpoints.",
       "item": [
         {
-          "name": "Create order",
+          "name": "Health",
           "request": {
             "method": "GET",
             "header": [],
+            "auth": {
+              "type": "noauth"
+            },
             "url": {
-              "raw": "{{baseUrl}}/v1/adyen/createOrder?amount=1000&currency=EUR&method=scheme&userId=postman-user&appId=demo",
+              "raw": "{{baseUrl}}/actuator/health",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "v1",
-                "adyen",
-                "createOrder"
-              ],
-              "query": [
-                {
-                  "key": "amount",
-                  "value": "1000",
-                  "description": "Minor units"
-                },
-                {
-                  "key": "currency",
-                  "value": "EUR"
-                },
-                {
-                  "key": "method",
-                  "value": "scheme"
-                },
-                {
-                  "key": "userId",
-                  "value": "postman-user"
-                },
-                {
-                  "key": "appId",
-                  "value": "demo"
-                }
+                "actuator",
+                "health"
               ]
             },
-            "description": "Redirects (302) the shopper when Adyen returns RedirectShopper; turn off auto-follow redirects in Postman to see it.",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "`{\"status\":\"UP\"}` when the app and its database are reachable."
           }
         },
         {
-          "name": "Redirect callback",
+          "name": "OpenAPI spec",
           "request": {
             "method": "GET",
             "header": [],
+            "auth": {
+              "type": "noauth"
+            },
             "url": {
-              "raw": "{{baseUrl}}/v1/adyen/rd?redirectResult=",
+              "raw": "{{baseUrl}}/v3/api-docs",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "v1",
-                "adyen",
-                "rd"
-              ],
-              "query": [
-                {
-                  "key": "redirectResult",
-                  "value": ""
-                }
+                "v3",
+                "api-docs"
               ]
             },
-            "description": "Called by Adyen after the redirect flow.",
-            "auth": {
-              "type": "noauth"
-            }
-          }
-        },
-        {
-          "name": "Stored payment details",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/adyen/details?appId=demo&userId=postman-user",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "adyen",
-                "details"
-              ],
-              "query": [
-                {
-                  "key": "appId",
-                  "value": "demo"
-                },
-                {
-                  "key": "userId",
-                  "value": "postman-user"
-                }
-              ]
-            },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
-          }
-        },
-        {
-          "name": "Delete stored token",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/adyen/del?appId=demo&userId=postman-user&token=",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "adyen",
-                "del"
-              ],
-              "query": [
-                {
-                  "key": "appId",
-                  "value": "demo"
-                },
-                {
-                  "key": "userId",
-                  "value": "postman-user"
-                },
-                {
-                  "key": "token",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Machine-readable spec; the Swagger UI is at {{baseUrl}}/docs."
           }
         }
       ]

@@ -51,11 +51,17 @@ cors:
   maxAge: 3600
 server:
   port: ${PORT:8089}
-  config:
-    connection-timeout: 30000
-    request-timeout: 30000
-    read-timeout: 30000
-    write-timeout: 30000
-    max-ide-time: 20000
-    max-connection: 50
-    max-life-time: 60000
+# Only the health endpoint is exposed, without details: it is public, like every other path here.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /docs

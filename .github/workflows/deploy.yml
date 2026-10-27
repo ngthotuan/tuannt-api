@@ -22,9 +22,10 @@ jobs:
           java-version: 21
           cache: maven
 
-      # Fail fast here: a compile error should stop the pipeline before it costs a Heroku release.
+      # Fail fast here: a compile error or failing test stops the pipeline before it costs a
+      # Heroku release. The runner has Docker, so the Testcontainers MySQL tests run here too.
       # Heroku's buildpack builds again on its side, so this is a check, not the artifact source.
-      - run: mvn -B -DskipTests clean package
+      - run: mvn -B clean verify
 
       # --force because Heroku is a deploy target, not a source of truth: any history rewrite on
       # GitHub would otherwise leave its git receiver rejecting every later push as non-fast-forward.
