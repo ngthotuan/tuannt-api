@@ -1,0 +1,932 @@
+{
+  "info": {
+    "name": "tuannt-api",
+    "description": "All endpoints of https://api.nttuan.dev (repo ngthotuan/tuannt-api).\n\n**Setup:** fill the collection variables `username` / `password` (the admin account lives in `~/.env-dev` as ADMIN_USERNAME / ADMIN_PASSWORD), then run **Auth → Login**. Its test script stores the JWT in `token`, and every request that needs it inherits Bearer auth from the collection. Public requests are set to *No Auth* on purpose: the API rejects an expired token even on public paths.\n\nSwitch `baseUrl` to `http://localhost:8089` for `./dev-run.sh`. Note that local and production share one database, so writes from either are real.\n\nErrors always come back as `{ errorCode, errorMessage }`. Timestamps are epoch millis.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.nttuan.dev"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "description": "ADMIN_PASSWORD from ~/.env-dev. Keep it out of shared/exported copies."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "Set automatically by Auth → Login (current value only). Clear it before exporting or sharing the collection."
+    },
+    {
+      "key": "wordId",
+      "value": "",
+      "description": "Set by Vocab (admin) → Add words. Requests that use it are skipped while it is empty, so they can never hit a real word by accident."
+    },
+    {
+      "key": "deviceId",
+      "value": "postman-test-device"
+    },
+    {
+      "key": "newUserPassword",
+      "value": "",
+      "description": "Password for Admin → Create user (8 or more characters, at most 72 bytes). Left empty on purpose."
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Accounts are created by an admin only; there is no sign-up. Tokens last 30 days.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Returns `{ token, expiresAt, user }` and stores the token in the `token` variable. Rate limited to 10 attempts per 15 minutes per IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('token', body.token);",
+                  "    console.log('Logged in as', body.user.username, body.user.role);",
+                  "}",
+                  "pm.test('login succeeded', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Current user from the token. 401 if the token is missing, invalid, expired, or its account was deleted."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vocab (public)",
+      "description": "No login needed.",
+      "item": [
+        {
+          "name": "List words (paged)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words?page=0&size=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Zero-based"
+                },
+                {
+                  "key": "size",
+                  "value": "50",
+                  "description": "1-100, default 50"
+                },
+                {
+                  "key": "q",
+                  "value": "career",
+                  "description": "Case-insensitive search on en and vi",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Newest first. Response: `{ items[{id,en,vi}], page, size, total, totalPages }`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Random practice set",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words/random?size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words",
+                "random"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "1-200, default 20"
+                }
+              ]
+            },
+            "description": "Server-picked random words. Response: `{ items, total }` where total is the pool size.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Sequential practice set",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words/sequence?offset=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words",
+                "sequence"
+              ],
+              "query": [
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Zero-based"
+                },
+                {
+                  "key": "size",
+                  "value": "20",
+                  "description": "1-200, default 20"
+                }
+              ]
+            },
+            "description": "Words in list order (oldest first) from a zero-based offset. Empty items once offset passes the end.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vocab (saved words)",
+      "description": "Needs any logged-in user (run Auth → Login first).",
+      "item": [
+        {
+          "name": "List saved word ids",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/saved",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "saved"
+              ]
+            },
+            "description": "Ids of the words the current user saved, newest first."
+          }
+        },
+        {
+          "name": "Save word",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/saved/{{wordId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "saved",
+                "{{wordId}}"
+              ]
+            },
+            "description": "Idempotent. 204 on success, 404 if the word does not exist."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the word Add words just created.",
+                  "if (!pm.collectionVariables.get('wordId')) {",
+                  "    console.warn('wordId is empty: run Vocab (admin) → Add words first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unsave word",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/saved/{{wordId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "saved",
+                "{{wordId}}"
+              ]
+            },
+            "description": "Idempotent. 204."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the word Add words just created.",
+                  "if (!pm.collectionVariables.get('wordId')) {",
+                  "    console.warn('wordId is empty: run Vocab (admin) → Add words first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List saved words (paged)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words?page=0&size=50&saved=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "50"
+                },
+                {
+                  "key": "saved",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Same as the public list, filtered to saved words. Needs a token."
+          }
+        },
+        {
+          "name": "Random from saved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words/random?size=20&saved=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words",
+                "random"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "saved",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Random set drawn from saved words only."
+          }
+        },
+        {
+          "name": "Sequence from saved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words/sequence?offset=0&size=20&saved=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words",
+                "sequence"
+              ],
+              "query": [
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "saved",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "In-order set drawn from saved words only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vocab (admin)",
+      "description": "ADMIN role only; a USER token gets 403. These change real data.",
+      "item": [
+        {
+          "name": "Add words",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words"
+              ]
+            },
+            "description": "Batch of up to 500. Terms whose English already exists (case-insensitive) are skipped, not duplicated. Response: `{ created[], skipped[] }`. Stores the first created id in `wordId`. If the term already exists nothing is created and `wordId` is cleared, so Update/Save/Delete are skipped.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"words\": [\n    {\n      \"en\": \"postman-test-word\",\n      \"vi\": \"từ thử từ Postman\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const created = pm.response.code === 201 ? pm.response.json().created : [];",
+                  "// Clear rather than keep a stale id when nothing new was created (e.g. the word already existed).",
+                  "pm.collectionVariables.set('wordId', created.length ? created[0].id : '');",
+                  "if (!created.length) console.warn('No word created, wordId cleared. Rename en in the body and retry.');",
+                  "pm.test('created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update word",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words/{{wordId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words",
+                "{{wordId}}"
+              ]
+            },
+            "description": "400 if the new English text clashes with another word.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"en\": \"postman-test-word\",\n  \"vi\": \"đã sửa từ Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the word Add words just created.",
+                  "if (!pm.collectionVariables.get('wordId')) {",
+                  "    console.warn('wordId is empty: run Vocab (admin) → Add words first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete word",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/vocab/words/{{wordId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "vocab",
+                "words",
+                "{{wordId}}"
+              ]
+            },
+            "description": "Deletes the word in `wordId` (only one Add words created) and removes it from every user's saved list. 204."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Never fall back to an arbitrary id: only act on the word Add words just created.",
+                  "if (!pm.collectionVariables.get('wordId')) {",
+                  "    console.warn('wordId is empty: run Vocab (admin) → Add words first. Skipping.');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "ADMIN role only.",
+      "item": [
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "username: 3-50 of letters, digits, `.` `_` `-`. password: 8-100 chars. role: USER (default) or ADMIN. 400 if the username exists. Creates a real account in the shared database. Fill `newUserPassword` first.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"new-user\",\n  \"password\": \"{{newUserPassword}}\",\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Article (RSS proxy)",
+      "description": "Public. Not cached: each call fetches upstream (~2s).",
+      "item": [
+        {
+          "name": "Sources",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/article/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "article",
+                "sources"
+              ]
+            },
+            "description": "`{ source: [categoryKey, ...] }`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/article?source=vnexpress&category=tin-moi-nhat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "article"
+              ],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "vnexpress"
+                },
+                {
+                  "key": "category",
+                  "value": "tin-moi-nhat"
+                }
+              ]
+            },
+            "description": "Feed for one source/category, keys from Sources.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quiz history",
+      "description": "Public, scoped by an anonymous deviceId.",
+      "item": [
+        {
+          "name": "Record attempt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/quiz/attempts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "quiz",
+                "attempts"
+              ]
+            },
+            "description": "Writes a real row. Only wrong answers are sent. Rate limited to 60/hour per IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deviceId\": \"{{deviceId}}\",\n  \"sourceName\": \"Postman sample\",\n  \"mode\": \"study\",\n  \"totalQuestions\": 2,\n  \"correctAnswers\": 1,\n  \"durationSeconds\": 30,\n  \"wrongAnswers\": [\n    {\n      \"questionIndex\": 1,\n      \"question\": \"2 + 2 = ?\",\n      \"selectedText\": \"5\",\n      \"correctText\": \"4\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/quiz/attempts?deviceId={{deviceId}}&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "quiz",
+                "attempts"
+              ],
+              "query": [
+                {
+                  "key": "deviceId",
+                  "value": "{{deviceId}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "1-200"
+                }
+              ]
+            },
+            "description": "`{ stats, attempts[], weakQuestions[] }` for the device.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "description": "Public.",
+      "item": [
+        {
+          "name": "Send message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "contact"
+              ]
+            },
+            "description": "Stores a real contact message (and tries a Telegram ping, which fails quietly on placeholder credentials). 201, no body. Rate limited to 5/hour per IP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman\",\n  \"email\": \"postman@example.com\",\n  \"subject\": \"Test from Postman\",\n  \"message\": \"Hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adyen (non-functional)",
+      "description": "Runs on placeholder Adyen credentials in every environment, so these fail until real keys are configured. Kept for completeness.",
+      "item": [
+        {
+          "name": "Create order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/adyen/createOrder?amount=1000&currency=EUR&method=scheme&userId=postman-user&appId=demo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "adyen",
+                "createOrder"
+              ],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "1000",
+                  "description": "Minor units"
+                },
+                {
+                  "key": "currency",
+                  "value": "EUR"
+                },
+                {
+                  "key": "method",
+                  "value": "scheme"
+                },
+                {
+                  "key": "userId",
+                  "value": "postman-user"
+                },
+                {
+                  "key": "appId",
+                  "value": "demo"
+                }
+              ]
+            },
+            "description": "Redirects (302) the shopper when Adyen returns RedirectShopper; turn off auto-follow redirects in Postman to see it.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Redirect callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/adyen/rd?redirectResult=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "adyen",
+                "rd"
+              ],
+              "query": [
+                {
+                  "key": "redirectResult",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Called by Adyen after the redirect flow.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Stored payment details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/adyen/details?appId=demo&userId=postman-user",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "adyen",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "appId",
+                  "value": "demo"
+                },
+                {
+                  "key": "userId",
+                  "value": "postman-user"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Delete stored token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/adyen/del?appId=demo&userId=postman-user&token=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "adyen",
+                "del"
+              ],
+              "query": [
+                {
+                  "key": "appId",
+                  "value": "demo"
+                },
+                {
+                  "key": "userId",
+                  "value": "postman-user"
+                },
+                {
+                  "key": "token",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

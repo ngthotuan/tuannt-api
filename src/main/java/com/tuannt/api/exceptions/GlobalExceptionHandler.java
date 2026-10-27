@@ -3,6 +3,7 @@ package com.tuannt.api.exceptions;
 import com.tuannt.api.constants.ApiStatus;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -45,6 +46,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ApiError apiError = exception.getApiError();
         log.warn("a handler customException code: {} - message: {}", apiError.getErrorCode(), apiError.getErrorMessage());
         return new ResponseEntity<>(apiError, exception.getStatus());
+    }
+
+    /**
+     * Unique-key races (two concurrent saves of the same word, two batches adding the same term)
+     * pass the service's existence checks and only fail at the database. Report a retryable 409
+     * instead of a 500.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public final ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException exception) {
+        log.warn("a handler dataIntegrityViolation: {}", exception.getMostSpecificCause().getMessage());
+        return new ResponseEntity<>(new ApiError(ApiStatus.CONFLICT), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)

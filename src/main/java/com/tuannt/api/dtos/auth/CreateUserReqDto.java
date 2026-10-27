@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.tuannt.api.constants.UserRole;
 import com.tuannt.api.dtos.BaseDto;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -27,5 +28,6 @@ public class CreateUserReqDto extends BaseDto {
     @Size(min = 8, max = 100, message = "password must be 8-100 characters")
     private String password;
 
+    @NotNull(message = "role must be USER or ADMIN")
     private UserRole role = UserRole.USER;
 }

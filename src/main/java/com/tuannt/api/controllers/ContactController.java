@@ -3,6 +3,7 @@ package com.tuannt.api.controllers;
 import com.tuannt.api.constants.ApiPaths;
 import com.tuannt.api.dtos.contact.ContactMessageReqDto;
 import com.tuannt.api.services.ContactService;
+import com.tuannt.api.utils.CommonUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,22 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ContactController {
     private final ContactService contactService;
     private final HttpServletRequest request;
+    private final CommonUtil commonUtil;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void submit(@Valid @RequestBody ContactMessageReqDto req) {
-        contactService.submit(req, clientIp(), request.getHeader("User-Agent"));
+        contactService.submit(req, commonUtil.clientIp(request), request.getHeader("User-Agent"));
     }
 
-    /**
-     * Heroku terminates TLS at its router, so the real client address only survives in
-     * X-Forwarded-For; the first entry is the original caller.
-     */
-    private String clientIp() {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
 }

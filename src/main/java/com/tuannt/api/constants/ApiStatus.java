@@ -16,6 +16,7 @@ public enum ApiStatus {
     INVALID_CREDENTIALS("Invalid username or password"),
     USERNAME_TAKEN("Username already exists"),
     WORD_NOT_FOUND("Word not found"),
+    CONFLICT("The data was changed at the same time, please retry"),
     BAD_REQUEST("Bad request"),
     METHOD_NOT_ALLOW("Method not allow"),
     TOO_MANY_REQUESTS("Too many requests, please try again later"),

@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -37,6 +38,8 @@ import java.time.Instant;
 public class AuthServiceImpl implements AuthService {
     private static final int MAX_LOGINS_PER_WINDOW = 10;
     private static final Duration LOGIN_WINDOW = Duration.ofMinutes(15);
+    /** BCrypt only ever reads the first 72 bytes, and Spring Security 6.4.5+ rejects longer input. */
+    private static final int BCRYPT_MAX_BYTES = 72;
 
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -50,6 +53,10 @@ public class AuthServiceImpl implements AuthService {
         if (!rateLimiter.tryAcquire("login:" + ip, MAX_LOGINS_PER_WINDOW, LOGIN_WINDOW)) {
             log.warn("Login rate limited for ip: {}", ip);
             throw new TooManyRequestsException();
+        }
+        // No stored password can be longer, so this is simply a wrong password, not a 500.
+        if (tooLongForBcrypt(req.getPassword())) {
+            throw new UnauthorizedException(ApiStatus.INVALID_CREDENTIALS);
         }
         // Same error for unknown user and wrong password, so the response doesn't reveal which
         // usernames exist.
@@ -92,6 +99,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public UserDto createUser(CreateUserReqDto req) {
+        if (tooLongForBcrypt(req.getPassword())) {
+            throw new BadRequestException("password must be at most " + BCRYPT_MAX_BYTES + " bytes");
+        }
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new BadRequestException(ApiStatus.USERNAME_TAKEN);
         }
@@ -103,6 +113,10 @@ public class AuthServiceImpl implements AuthService {
         AppUser saved = userRepository.save(user);
         log.info("User created id: {} username: {} role: {}", saved.getId(), saved.getUsername(), saved.getRole());
         return toDto(saved);
+    }
+
+    private boolean tooLongForBcrypt(String password) {
+        return password.getBytes(StandardCharsets.UTF_8).length > BCRYPT_MAX_BYTES;
     }
 
     private UserDto toDto(AppUser user) {

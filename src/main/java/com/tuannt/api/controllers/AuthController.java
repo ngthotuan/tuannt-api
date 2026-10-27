@@ -5,6 +5,7 @@ import com.tuannt.api.dtos.auth.LoginReqDto;
 import com.tuannt.api.dtos.auth.LoginResDto;
 import com.tuannt.api.dtos.auth.UserDto;
 import com.tuannt.api.services.AuthService;
+import com.tuannt.api.utils.CommonUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
     private final HttpServletRequest request;
+    private final CommonUtil commonUtil;
 
     @PostMapping("/login")
     public LoginResDto login(@Valid @RequestBody LoginReqDto req) {
-        return authService.login(req, clientIp());
+        return authService.login(req, commonUtil.clientIp(request));
     }
 
     @GetMapping("/me")
@@ -41,12 +43,4 @@ public class AuthController {
         return authService.me(Long.valueOf(jwt.getSubject()));
     }
 
-    /** Heroku terminates TLS at its router, so the caller only survives in X-Forwarded-For. */
-    private String clientIp() {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
 }

@@ -4,6 +4,7 @@ import com.tuannt.api.constants.ApiPaths;
 import com.tuannt.api.dtos.quiz.QuizAttemptReqDto;
 import com.tuannt.api.dtos.quiz.QuizHistoryResDto;
 import com.tuannt.api.services.QuizAttemptService;
+import com.tuannt.api.utils.CommonUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -36,11 +37,12 @@ import java.util.Map;
 public class QuizController {
     private final QuizAttemptService quizAttemptService;
     private final HttpServletRequest request;
+    private final CommonUtil commonUtil;
 
     @PostMapping("/attempts")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Long> record(@Valid @RequestBody QuizAttemptReqDto req) {
-        return Map.of("id", quizAttemptService.record(req, clientIp()));
+        return Map.of("id", quizAttemptService.record(req, commonUtil.clientIp(request)));
     }
 
     @GetMapping("/attempts")
@@ -53,12 +55,4 @@ public class QuizController {
         return quizAttemptService.history(deviceId, limit);
     }
 
-    /** Heroku terminates TLS at its router, so the caller only survives in X-Forwarded-For. */
-    private String clientIp() {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
 }

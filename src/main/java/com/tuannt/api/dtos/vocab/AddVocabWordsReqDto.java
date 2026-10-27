@@ -3,6 +3,7 @@ package com.tuannt.api.dtos.vocab;
 import com.tuannt.api.dtos.BaseDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,8 +19,7 @@ import java.util.List;
 @Getter
 @Setter
 public class AddVocabWordsReqDto extends BaseDto {
-    @Valid
     @NotEmpty(message = "words is required")
     @Size(max = 500, message = "at most 500 words per request")
-    private List<VocabWordReqDto> words = new ArrayList<>();
+    private List<@NotNull(message = "words must not contain null") @Valid VocabWordReqDto> words = new ArrayList<>();
 }

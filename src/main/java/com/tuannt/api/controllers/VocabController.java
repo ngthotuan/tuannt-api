@@ -51,7 +51,10 @@ public class VocabController {
 
     @GetMapping("/words")
     public PageResDto<VocabWordDto> listWords(
-            @RequestParam(defaultValue = "0") @Min(value = 0, message = "page must be at least 0") int page,
+            @RequestParam(defaultValue = "0")
+            @Min(value = 0, message = "page must be at least 0")
+            // page * size must stay an int offset, or Spring Data throws and it surfaces as a 500.
+            @Max(value = 100_000, message = "page must be at most 100000") int page,
             @RequestParam(defaultValue = "50")
             @Min(value = 1, message = "size must be at least 1")
             @Max(value = 100, message = "size must be at most 100") int size,
