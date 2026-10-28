@@ -13,7 +13,6 @@ import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.NotFoundException;
 import com.tuannt.api.repositories.PostRepository;
 import com.tuannt.api.repositories.PostSummaryView;
-import com.tuannt.api.services.DeployHookService;
 import com.tuannt.api.services.PostService;
 import com.tuannt.api.utils.CommonUtil;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +44,6 @@ public class PostServiceImpl implements PostService {
     private static final Set<String> RESERVED_SLUGS = Set.of("tags");
 
     private final PostRepository postRepository;
-    private final DeployHookService deployHookService;
     private final CommonUtil commonUtil;
 
     @Override
@@ -112,9 +110,6 @@ public class PostServiceImpl implements PostService {
         apply(post, req, now);
         Post saved = postRepository.save(post);
         log.info("Post created id: {} slug: {} status: {}", saved.getId(), saved.getSlug(), saved.getStatus());
-        if (saved.getStatus() == PostStatus.PUBLISHED) {
-            deployHookService.contentChanged("post published: " + saved.getSlug());
-        }
         return toDto(saved);
     }
 
@@ -122,8 +117,6 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostDto update(Long id, PostReqDto req) {
         Post post = findPost(id);
-        boolean wasPublished = post.getStatus() == PostStatus.PUBLISHED;
-        String oldSlug = post.getSlug();
         // An empty slug keeps the current one: re-deriving it from an edited title would
         // silently break every link to the post.
         if (StringUtils.hasText(req.getSlug()) && !req.getSlug().equals(post.getSlug())) {
@@ -132,9 +125,6 @@ public class PostServiceImpl implements PostService {
         }
         apply(post, req, Instant.now());
         log.info("Post updated id: {} slug: {} status: {}", id, post.getSlug(), post.getStatus());
-        if (wasPublished || post.getStatus() == PostStatus.PUBLISHED) {
-            deployHookService.contentChanged("post updated: " + oldSlug);
-        }
         return toDto(post);
     }
 
@@ -144,9 +134,6 @@ public class PostServiceImpl implements PostService {
         Post post = findPost(id);
         postRepository.delete(post);
         log.info("Post deleted id: {} slug: {}", id, post.getSlug());
-        if (post.getStatus() == PostStatus.PUBLISHED) {
-            deployHookService.contentChanged("post deleted: " + post.getSlug());
-        }
     }
 
     private void apply(Post post, PostReqDto req, Instant now) {

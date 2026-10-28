@@ -8,7 +8,6 @@ import com.tuannt.api.entities.Post;
 import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.NotFoundException;
 import com.tuannt.api.repositories.PostRepository;
-import com.tuannt.api.services.DeployHookService;
 import com.tuannt.api.utils.CommonUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,16 +19,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PostServiceImplTest {
     private final PostRepository repository = mock(PostRepository.class);
-    private final DeployHookService deployHook = mock(DeployHookService.class);
-    private final PostServiceImpl service = new PostServiceImpl(repository, deployHook, new CommonUtil(new ObjectMapper()));
+    private final PostServiceImpl service = new PostServiceImpl(repository, new CommonUtil(new ObjectMapper()));
 
     @BeforeEach
     void saveAssignsAnId() {
@@ -47,7 +42,6 @@ class PostServiceImplTest {
         assertThat(created.getSlug()).isEqualTo("hoc-spring-boot-o-da-nang");
         assertThat(created.getTags()).containsExactly("spring-boot", "java");
         assertThat(created.getPublishedAt()).isNull();
-        verify(deployHook, never()).contentChanged(anyString());
     }
 
     @Test
@@ -63,25 +57,22 @@ class PostServiceImplTest {
     }
 
     @Test
-    void publishingSetsTheDateOnceAndTriggersARebuild() {
+    void publishingSetsThePublishedDate() {
         PostDto created = service.create(req("p", "Title", PostStatus.PUBLISHED));
         assertThat(created.getPublishedAt()).isNotNull();
-        verify(deployHook).contentChanged(anyString());
     }
 
     @Test
-    void editingADraftDoesNotRebuildButUnpublishingDoes() {
+    void editingKeepsTheSlugAndUnpublishingKeepsTheFirstPublishedDate() {
         Post draft = existing(PostStatus.DRAFT, null);
         when(repository.findById(1L)).thenReturn(Optional.of(draft));
         service.update(1L, req("", "Edited", PostStatus.DRAFT));
-        verify(deployHook, never()).contentChanged(anyString());
         assertThat(draft.getSlug()).isEqualTo("existing");
 
         Instant firstPublished = Instant.parse("2026-01-01T00:00:00Z");
         Post published = existing(PostStatus.PUBLISHED, firstPublished);
         when(repository.findById(2L)).thenReturn(Optional.of(published));
         service.update(2L, req(null, "Hidden again", PostStatus.DRAFT));
-        verify(deployHook).contentChanged(anyString());
         assertThat(published.getPublishedAt()).isEqualTo(firstPublished);
     }
 

@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Blog, portfolio, inbox and account management against a real MySQL migrated from empty by
- * Flyway. The deploy hook is left unconfigured, so nothing leaves the test. Needs Docker.
+ * Flyway. Needs Docker.
  */
 @SpringBootTest(properties = {
         "auth.jwtSecret=integration-secret-that-is-at-least-32-bytes",

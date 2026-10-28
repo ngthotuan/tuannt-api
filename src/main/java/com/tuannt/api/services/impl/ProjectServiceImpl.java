@@ -8,7 +8,6 @@ import com.tuannt.api.entities.Project;
 import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.NotFoundException;
 import com.tuannt.api.repositories.ProjectRepository;
-import com.tuannt.api.services.DeployHookService;
 import com.tuannt.api.services.ProjectService;
 import com.tuannt.api.utils.CommonUtil;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +36,6 @@ public class ProjectServiceImpl implements ProjectService {
             Sort.Order.desc("featured"), Sort.Order.asc("sortOrder"), Sort.Order.asc("id"));
 
     private final ProjectRepository projectRepository;
-    private final DeployHookService deployHookService;
     private final CommonUtil commonUtil;
 
     @Override
@@ -71,9 +69,6 @@ public class ProjectServiceImpl implements ProjectService {
         apply(project, req, now);
         Project saved = projectRepository.save(project);
         log.info("Project created id: {} slug: {} visible: {}", saved.getId(), saved.getSlug(), saved.isVisible());
-        if (saved.isVisible()) {
-            deployHookService.contentChanged("project created: " + saved.getSlug());
-        }
         return toDto(saved);
     }
 
@@ -81,7 +76,6 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public ProjectDto update(Long id, ProjectReqDto req) {
         Project project = findProject(id);
-        boolean wasVisible = project.isVisible();
         // An empty slug keeps the current one, so links to it keep working.
         if (StringUtils.hasText(req.getSlug()) && !req.getSlug().equals(project.getSlug())) {
             checkSlug(req.getSlug(), projectRepository.existsBySlugAndIdNot(req.getSlug(), id));
@@ -89,9 +83,6 @@ public class ProjectServiceImpl implements ProjectService {
         }
         apply(project, req, Instant.now());
         log.info("Project updated id: {} slug: {} visible: {}", id, project.getSlug(), project.isVisible());
-        if (wasVisible || project.isVisible()) {
-            deployHookService.contentChanged("project updated: " + project.getSlug());
-        }
         return toDto(project);
     }
 
@@ -101,9 +92,6 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = findProject(id);
         projectRepository.delete(project);
         log.info("Project deleted id: {} slug: {}", id, project.getSlug());
-        if (project.isVisible()) {
-            deployHookService.contentChanged("project deleted: " + project.getSlug());
-        }
     }
 
     private void apply(Project project, ProjectReqDto req, Instant now) {

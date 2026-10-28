@@ -1182,7 +1182,7 @@
     },
     {
       "name": "Blog (admin)",
-      "description": "ADMIN role only. Changes that touch published content trigger the Pages deploy hook when one is configured. These change real data.",
+      "description": "ADMIN role only. These change real data.",
       "item": [
         {
           "name": "List posts (all statuses)",
@@ -1418,7 +1418,7 @@
     },
     {
       "name": "Projects (admin)",
-      "description": "ADMIN role only. Changes to visible projects trigger the Pages deploy hook when configured.",
+      "description": "ADMIN role only.",
       "item": [
         {
           "name": "List projects (incl. hidden)",

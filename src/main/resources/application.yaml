@@ -34,10 +34,6 @@ auth:
   admin:
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
-content:
-  # Cloudflare Pages deploy hook, POSTed after published content changes so the static site
-  # rebuilds. Empty disables it. The URL itself is the credential, so it is never logged.
-  deployHookUrl: ${PAGES_DEPLOY_HOOK_URL:}
 cors:
   allowedOriginPatterns:
     - "https://nttuan.dev"
