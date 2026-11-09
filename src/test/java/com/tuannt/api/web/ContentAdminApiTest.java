@@ -102,9 +102,9 @@ class ContentAdminApiTest {
 
     @Test
     void publicReadsNeedNoToken() throws Exception {
-        when(postService.listPublished(anyInt(), anyInt(), any())).thenReturn(PageResDto.<com.tuannt.api.dtos.post.PostSummaryDto>builder().items(List.of()).build());
-        mvc.perform(get("/v1/posts").param("tag", "java")).andExpect(status().isOk());
-        verify(postService).listPublished(0, 20, "java");
+        when(postService.listPublished(anyInt(), anyInt(), any(), any())).thenReturn(PageResDto.<com.tuannt.api.dtos.post.PostSummaryDto>builder().items(List.of()).build());
+        mvc.perform(get("/v1/posts").param("tag", "java").param("q", "spring")).andExpect(status().isOk());
+        verify(postService).listPublished(0, 20, "java", "spring");
         mvc.perform(get("/v1/posts/tags")).andExpect(status().isOk());
         verify(postService).publishedTags();
         mvc.perform(get("/v1/projects")).andExpect(status().isOk());
@@ -113,10 +113,35 @@ class ContentAdminApiTest {
 
     @Test
     void unpublishedPostIsA404WithTheSharedShape() throws Exception {
-        when(postService.getPublished("draft")).thenThrow(new NotFoundException(ApiStatus.POST_NOT_FOUND));
+        when(postService.getPublished("draft", false, null)).thenThrow(new NotFoundException(ApiStatus.POST_NOT_FOUND));
         mvc.perform(get("/v1/posts/draft"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("POST_NOT_FOUND"));
+    }
+
+    @Test
+    void aLoggedInReaderIsAMemberAndPreviewKeysArePassedThrough() throws Exception {
+        mvc.perform(get("/v1/posts/members-only").with(USER)).andExpect(status().isOk());
+        verify(postService).getPublished("members-only", true, null);
+        mvc.perform(get("/v1/posts/draft").param("preview", "secret")).andExpect(status().isOk());
+        verify(postService).getPublished("draft", false, "secret");
+    }
+
+    @Test
+    void viewsAreAnonymousAndAlways204() throws Exception {
+        mvc.perform(post("/v1/posts/anything/views")).andExpect(status().isNoContent());
+        verify(postService).recordView(eq("anything"), any());
+        mvc.perform(get("/v1/posts/anything/related").param("limit", "11")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void previewKeysAreAdminOnly() throws Exception {
+        mvc.perform(post("/v1/admin/posts/1/preview-key")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/v1/admin/posts/1/preview-key").with(USER)).andExpect(status().isForbidden());
+        mvc.perform(post("/v1/admin/posts/1/preview-key").with(ADMIN)).andExpect(status().isOk());
+        mvc.perform(delete("/v1/admin/posts/1/preview-key").with(ADMIN)).andExpect(status().isNoContent());
+        verify(postService).createPreviewKey(1L);
+        verify(postService).revokePreviewKey(1L);
     }
 
     @Test
@@ -211,7 +236,7 @@ class ContentAdminApiTest {
     @Test
     void publicPostListValidatesPaging() throws Exception {
         mvc.perform(get("/v1/posts").param("size", "101")).andExpect(status().isBadRequest());
-        verify(postService, org.mockito.Mockito.never()).listPublished(anyInt(), anyInt(), isNull());
+        verify(postService, org.mockito.Mockito.never()).listPublished(anyInt(), anyInt(), isNull(), isNull());
     }
 
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder json(

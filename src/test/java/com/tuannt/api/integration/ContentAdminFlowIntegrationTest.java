@@ -92,6 +92,68 @@ class ContentAdminFlowIntegrationTest {
     }
 
     @Test
+    void visibilityScheduleSearchRelatedViewsAndPreview() throws Exception {
+        String admin = bearer("it-admin", "it-admin-password");
+        long past = System.currentTimeMillis() - 60_000;
+        long future = System.currentTimeMillis() + 86_400_000;
+        String publicPost = createPost(admin, "Kafka 100% ổn định", "kafka-public", "PUBLIC", "PUBLISHED", past, "[\"kafka\",\"java\"]");
+        createPost(admin, "Kafka bí mật", "kafka-unlisted", "UNLISTED", "PUBLISHED", past, "[\"kafka\"]");
+        createPost(admin, "Kafka cho thành viên", "kafka-members", "MEMBERS", "PUBLISHED", past, "[\"kafka\"]");
+        long scheduledId = createPostId(admin, "Kafka tuần sau", "kafka-scheduled", "PUBLIC", "PUBLISHED", future, "[\"kafka\"]");
+
+        // Lists, tags and search show public and members posts only; unlisted and scheduled stay out.
+        mvc.perform(get("/v1/posts").param("tag", "kafka"))
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.items[?(@.slug == 'kafka-members')].visibility").value("MEMBERS"));
+        mvc.perform(get("/v1/posts").param("q", "100%")).andExpect(jsonPath("$.total").value(1));
+        mvc.perform(get("/v1/posts").param("q", "BÍ MẬT")).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/v1/posts/tags")).andExpect(jsonPath("$[?(@.tag == 'kafka')].count").value(2));
+
+        // Unlisted reads by link; scheduled does not exist yet; members needs a login for the body.
+        mvc.perform(get("/v1/posts/kafka-unlisted")).andExpect(status().isOk()).andExpect(jsonPath("$.content").value("# Body"));
+        mvc.perform(get("/v1/posts/kafka-scheduled")).andExpect(status().isNotFound());
+        mvc.perform(get("/v1/posts/kafka-members"))
+                .andExpect(jsonPath("$.locked").value(true))
+                .andExpect(jsonPath("$.content").doesNotExist());
+        mvc.perform(get("/v1/posts/kafka-members").header("Authorization", admin))
+                .andExpect(jsonPath("$.locked").value(false))
+                .andExpect(jsonPath("$.content").value("# Body"));
+
+        // Related: listed posts sharing tags, never the post itself or unlisted/scheduled ones.
+        mvc.perform(get("/v1/posts/" + publicPost + "/related"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].slug").value("kafka-members"));
+
+        mvc.perform(post("/v1/posts/kafka-public/views")).andExpect(status().isNoContent());
+        mvc.perform(post("/v1/posts/kafka-public/views")).andExpect(status().isNoContent());
+        mvc.perform(post("/v1/posts/kafka-scheduled/views")).andExpect(status().isNoContent());
+        mvc.perform(get("/v1/posts/kafka-public")).andExpect(jsonPath("$.viewCount").value(1));
+
+        // A preview link opens the scheduled post until it is revoked.
+        String key = body(mvc.perform(post("/v1/admin/posts/" + scheduledId + "/preview-key").header("Authorization", admin))
+                .andExpect(status().isOk())).path("previewKey").asText();
+        mvc.perform(get("/v1/posts/kafka-scheduled").param("preview", key))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.previewKey").doesNotExist());
+        mvc.perform(delete("/v1/admin/posts/" + scheduledId + "/preview-key").header("Authorization", admin))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/v1/posts/kafka-scheduled").param("preview", key)).andExpect(status().isNotFound());
+    }
+
+    private String createPost(String admin, String title, String slug, String visibility, String status,
+                              long publishedAt, String tags) throws Exception {
+        createPostId(admin, title, slug, visibility, status, publishedAt, tags);
+        return slug;
+    }
+
+    private long createPostId(String admin, String title, String slug, String visibility, String status,
+                              long publishedAt, String tags) throws Exception {
+        String json = "{\"title\":\"" + title + "\",\"slug\":\"" + slug + "\",\"content\":\"# Body\",\"tags\":" + tags
+                + ",\"status\":\"" + status + "\",\"visibility\":\"" + visibility + "\",\"publishedAt\":" + publishedAt + "}";
+        return body(mvc.perform(json(post("/v1/admin/posts"), admin, json)).andExpect(status().isCreated())).path("id").asLong();
+    }
+
+    @Test
     void hiddenProjectsAreAdminOnly() throws Exception {
         String admin = bearer("it-admin", "it-admin-password");
         mvc.perform(json(post("/v1/admin/projects"), admin, """

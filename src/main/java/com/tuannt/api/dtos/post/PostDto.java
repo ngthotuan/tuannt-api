@@ -1,6 +1,7 @@
 package com.tuannt.api.dtos.post;
 
 import com.tuannt.api.constants.PostStatus;
+import com.tuannt.api.constants.PostVisibility;
 import com.tuannt.api.dtos.BaseDto;
 import com.tuannt.api.utils.JsonUtil;
 import lombok.Builder;
@@ -26,10 +27,16 @@ public class PostDto extends BaseDto {
     private String coverUrl;
     private List<String> tags;
     private PostStatus status;
+    private PostVisibility visibility;
+    private long viewCount;
     /** Epoch millis; null until the post is first published. */
     private Long publishedAt;
     private Long createdAt;
     private Long updatedAt;
+    /** True when the body was withheld: a MEMBERS post read without logging in. */
+    private boolean locked;
+    /** Admin responses only. */
+    private String previewKey;
 
     @Override
     public String toString() {

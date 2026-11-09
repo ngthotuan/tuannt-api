@@ -1,6 +1,7 @@
 package com.tuannt.api.dtos.post;
 
 import com.tuannt.api.constants.PostStatus;
+import com.tuannt.api.constants.PostVisibility;
 import com.tuannt.api.dtos.BaseDto;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +24,8 @@ public class PostSummaryDto extends BaseDto {
     private String coverUrl;
     private List<String> tags;
     private PostStatus status;
+    private PostVisibility visibility;
+    private long viewCount;
     /** Epoch millis; null until the post is first published. */
     private Long publishedAt;
     private Long createdAt;

@@ -72,4 +72,16 @@ public class AdminPostController {
     public void delete(@PathVariable Long id) {
         postService.delete(id);
     }
+
+    /** Issues a fresh preview secret (the old link stops working); the response carries it. */
+    @PostMapping("/{id}/preview-key")
+    public PostDto createPreviewKey(@PathVariable Long id) {
+        return postService.createPreviewKey(id);
+    }
+
+    @DeleteMapping("/{id}/preview-key")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokePreviewKey(@PathVariable Long id) {
+        postService.revokePreviewKey(id);
+    }
 }

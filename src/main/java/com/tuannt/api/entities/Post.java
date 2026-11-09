@@ -1,6 +1,7 @@
 package com.tuannt.api.entities;
 
 import com.tuannt.api.constants.PostStatus;
+import com.tuannt.api.constants.PostVisibility;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -54,7 +55,21 @@ public class Post {
     @Column(nullable = false, length = 16)
     private PostStatus status;
 
-    /** Set on first publish and kept through unpublish/republish, so the post keeps its date. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private PostVisibility visibility = PostVisibility.PUBLIC;
+
+    /** Secret for the draft preview link; null when no link has been issued. */
+    @Column(name = "preview_key", length = 64)
+    private String previewKey;
+
+    @Column(name = "view_count", nullable = false)
+    private long viewCount;
+
+    /**
+     * Set on first publish and kept through unpublish/republish, so the post keeps its date. A
+     * future value schedules the post: it stays hidden until then.
+     */
     @Column(name = "published_at")
     private Instant publishedAt;
 

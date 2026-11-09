@@ -1,9 +1,11 @@
 package com.tuannt.api.dtos.post;
 
 import com.tuannt.api.constants.PostStatus;
+import com.tuannt.api.constants.PostVisibility;
 import com.tuannt.api.constants.ValidationPatterns;
 import com.tuannt.api.dtos.BaseDto;
 import com.tuannt.api.utils.JsonUtil;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -52,6 +54,16 @@ public class PostReqDto extends BaseDto {
 
     @NotNull(message = "status must be DRAFT or PUBLISHED")
     private PostStatus status = PostStatus.DRAFT;
+
+    @NotNull(message = "visibility must be PUBLIC, UNLISTED or MEMBERS")
+    private PostVisibility visibility = PostVisibility.PUBLIC;
+
+    /**
+     * Optional epoch millis. A future date schedules a published post; null keeps the current
+     * date (or uses the moment of first publish).
+     */
+    @Min(value = 0, message = "publishedAt must be epoch milliseconds")
+    private Long publishedAt;
 
     // LoggingAspect logs request bodies through toString; a whole Markdown document would flood it.
     @Override
