@@ -1177,6 +1177,58 @@
               "type": "noauth"
             }
           }
+        },
+        {
+          "name": "Related posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/posts/hello-world/related?limit=3",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "posts",
+                "hello-world",
+                "related"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "3"
+                }
+              ]
+            },
+            "description": "Listed posts sharing tags with this one (limit 1..10, default 3).",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Record a view",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/posts/hello-world/views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "posts",
+                "hello-world",
+                "views"
+              ]
+            },
+            "description": "Anonymous read counter; always 204, deduped per IP and post for 6 hours.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
         }
       ]
     },
@@ -1386,6 +1438,48 @@
               }
             }
           ]
+        },
+        {
+          "name": "Create preview link",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts/{{postId}}/preview-key",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts",
+                "{{postId}}",
+                "preview-key"
+              ]
+            },
+            "description": "ADMIN. Issues a new preview secret (revokes the old one); the response carries previewKey. Open /blog/{slug}?preview=KEY."
+          }
+        },
+        {
+          "name": "Revoke preview link",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/posts/{{postId}}/preview-key",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "posts",
+                "{{postId}}",
+                "preview-key"
+              ]
+            },
+            "description": "ADMIN. Removes the preview secret; 204."
+          }
         }
       ]
     },
