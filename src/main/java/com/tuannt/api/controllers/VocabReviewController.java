@@ -1,6 +1,7 @@
 package com.tuannt.api.controllers;
 
 import com.tuannt.api.constants.ApiPaths;
+import com.tuannt.api.dtos.vocab.ReviewActivityDto;
 import com.tuannt.api.dtos.vocab.ReviewQueueResDto;
 import com.tuannt.api.dtos.vocab.ReviewReqDto;
 import com.tuannt.api.dtos.vocab.ReviewStateDto;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -58,6 +60,16 @@ public class VocabReviewController {
     @GetMapping("/stats")
     public ReviewStatsResDto stats(@AuthenticationPrincipal Jwt jwt) {
         return reviewService.stats(userId(jwt));
+    }
+
+    /** Answers per day for the activity heatmap; days without reviews are left out. */
+    @GetMapping("/activity")
+    public List<ReviewActivityDto> activity(
+            @RequestParam(defaultValue = "371")
+            @Min(value = 1, message = "days must be at least 1")
+            @Max(value = 731, message = "days must be at most 731") int days,
+            @AuthenticationPrincipal Jwt jwt) {
+        return reviewService.activity(userId(jwt), days);
     }
 
     /** The token subject is the app_user id, set at login. */

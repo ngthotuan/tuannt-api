@@ -79,10 +79,10 @@ class ApiSecurityAndValidationTest {
 
     @Test
     void wordListIsPublic() throws Exception {
-        when(vocabService.listWords(anyInt(), anyInt(), any(), anyBoolean(), any()))
+        when(vocabService.listWords(anyInt(), anyInt(), any(), any(), anyBoolean(), any()))
                 .thenReturn(PageResDto.<com.tuannt.api.dtos.vocab.VocabWordDto>builder().items(List.of()).build());
         mvc.perform(get("/v1/vocab/words")).andExpect(status().isOk());
-        verify(vocabService).listWords(0, 50, null, false, null);
+        verify(vocabService).listWords(0, 50, null, null, false, null);
     }
 
     @Test
@@ -95,7 +95,7 @@ class ApiSecurityAndValidationTest {
     @Test
     void savedFilterUsesTheTokenSubject() throws Exception {
         mvc.perform(get("/v1/vocab/words").param("saved", "true").with(USER)).andExpect(status().isOk());
-        verify(vocabService).listWords(0, 50, null, true, 7L);
+        verify(vocabService).listWords(0, 50, null, null, true, 7L);
     }
 
     @Test

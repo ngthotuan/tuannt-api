@@ -77,6 +77,25 @@ class VocabFlowIntegrationTest {
                 .andExpect(jsonPath("$.total").value(1))
                 .andExpect(jsonPath("$.items[0].id").value(wordId));
 
+        // IPA (slashes dropped), example and topic round-trip, and the topic filters every view.
+        mvc.perform(put("/v1/vocab/words/" + wordId).header("Authorization", bearer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"en\":\"it-word\",\"vi\":\"tu kiem thu\",\"ipa\":\"/ˈɪt wɜːd/\",\"example\":\"An it-word.\",\"topic\":\"IT Topic\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ipa").value("ˈɪt wɜːd"))
+                .andExpect(jsonPath("$.topic").value("IT Topic"));
+        mvc.perform(get("/v1/vocab/words").param("topic", "IT Topic"))
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].example").value("An it-word."));
+        mvc.perform(get("/v1/vocab/words/random").param("topic", "IT Topic"))
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(wordId));
+        mvc.perform(get("/v1/vocab/words/sequence").param("topic", "IT Topic").param("saved", "true").header("Authorization", bearer))
+                .andExpect(jsonPath("$.total").value(1));
+        mvc.perform(get("/v1/vocab/words/sequence").param("topic", "No such topic")).andExpect(jsonPath("$.total").value(0));
+        mvc.perform(get("/v1/vocab/words/topics"))
+                .andExpect(jsonPath("$[?(@.topic == 'IT Topic')].count").value(1));
+
         mvc.perform(delete("/v1/vocab/words/" + wordId).header("Authorization", bearer)).andExpect(status().isNoContent());
         // Deleting a word must also drop it from every saved list.
         mvc.perform(get("/v1/vocab/saved").header("Authorization", bearer)).andExpect(jsonPath("$.length()").value(0));

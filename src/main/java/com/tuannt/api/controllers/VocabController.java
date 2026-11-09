@@ -6,6 +6,7 @@ import com.tuannt.api.dtos.PageResDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsReqDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsResDto;
 import com.tuannt.api.dtos.vocab.PracticeSetResDto;
+import com.tuannt.api.dtos.vocab.TopicCountDto;
 import com.tuannt.api.dtos.vocab.VocabWordDto;
 import com.tuannt.api.dtos.vocab.VocabWordReqDto;
 import com.tuannt.api.exceptions.UnauthorizedException;
@@ -59,9 +60,15 @@ public class VocabController {
             @Min(value = 1, message = "size must be at least 1")
             @Max(value = 100, message = "size must be at most 100") int size,
             @RequestParam(required = false) @Size(max = 100, message = "q must be at most 100 characters") String q,
+            @RequestParam(required = false) @Size(max = 60, message = "topic must be at most 60 characters") String topic,
             @RequestParam(defaultValue = "false") boolean saved,
             @AuthenticationPrincipal Jwt jwt) {
-        return vocabService.listWords(page, size, q, saved, saved ? requireUserId(jwt) : null);
+        return vocabService.listWords(page, size, q, topic, saved, saved ? requireUserId(jwt) : null);
+    }
+
+    @GetMapping("/words/topics")
+    public List<TopicCountDto> topics() {
+        return vocabService.topics();
     }
 
     /** A random practice set, so the client never has to download the whole list to shuffle it. */
@@ -70,9 +77,10 @@ public class VocabController {
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "size must be at least 1")
             @Max(value = 200, message = "size must be at most 200") int size,
+            @RequestParam(required = false) @Size(max = 60, message = "topic must be at most 60 characters") String topic,
             @RequestParam(defaultValue = "false") boolean saved,
             @AuthenticationPrincipal Jwt jwt) {
-        return vocabService.randomWords(size, saved, saved ? requireUserId(jwt) : null);
+        return vocabService.randomWords(size, topic, saved, saved ? requireUserId(jwt) : null);
     }
 
     /** The next practice set in list order (oldest first), from a zero-based offset. */
@@ -82,9 +90,10 @@ public class VocabController {
             @RequestParam(defaultValue = "20")
             @Min(value = 1, message = "size must be at least 1")
             @Max(value = 200, message = "size must be at most 200") int size,
+            @RequestParam(required = false) @Size(max = 60, message = "topic must be at most 60 characters") String topic,
             @RequestParam(defaultValue = "false") boolean saved,
             @AuthenticationPrincipal Jwt jwt) {
-        return vocabService.sequenceWords(offset, size, saved, saved ? requireUserId(jwt) : null);
+        return vocabService.sequenceWords(offset, size, topic, saved, saved ? requireUserId(jwt) : null);
     }
 
     @PostMapping("/words")

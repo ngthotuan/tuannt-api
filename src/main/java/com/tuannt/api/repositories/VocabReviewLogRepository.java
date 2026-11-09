@@ -25,6 +25,15 @@ public interface VocabReviewLogRepository extends JpaRepository<VocabReviewLog, 
             """)
     List<LocalDate> findReviewDays(Long userId, LocalDate since);
 
+    /** [reviewDay, count] per day with at least one review, oldest first. */
+    @Query("""
+            select l.reviewDay, count(l) from VocabReviewLog l
+            where l.userId = :userId and l.reviewDay >= :since
+            group by l.reviewDay
+            order by l.reviewDay
+            """)
+    List<Object[]> countPerDay(Long userId, LocalDate since);
+
     @Modifying
     @Query("delete from VocabReviewLog l where l.wordId = :wordId")
     void deleteByWordId(Long wordId);

@@ -1,5 +1,6 @@
 package com.tuannt.api.repositories;
 
+import com.tuannt.api.dtos.vocab.TopicCountDto;
 import com.tuannt.api.entities.VocabWord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,40 +21,69 @@ public interface VocabWordRepository extends JpaRepository<VocabWord, Long> {
     @Query("""
             select w from VocabWord w
             where (:pattern is null or lower(w.en) like :pattern escape '\\' or lower(w.vi) like :pattern escape '\\')
+              and (:topic is null or w.topic = :topic)
             """)
-    Page<VocabWord> search(String pattern, Pageable pageable);
+    Page<VocabWord> search(String pattern, String topic, Pageable pageable);
 
     @Query("""
             select w from VocabWord w
             where exists (select 1 from VocabSavedWord s where s.wordId = w.id and s.userId = :userId)
               and (:pattern is null or lower(w.en) like :pattern escape '\\' or lower(w.vi) like :pattern escape '\\')
+              and (:topic is null or w.topic = :topic)
             """)
-    Page<VocabWord> searchSaved(Long userId, String pattern, Pageable pageable);
+    Page<VocabWord> searchSaved(Long userId, String pattern, String topic, Pageable pageable);
 
     // Sequential practice walks the list oldest first (the original sheet order) from any
     // position, which page numbers can't express, hence LIMIT/OFFSET.
-    @Query(value = "SELECT * FROM vocab_word ORDER BY id LIMIT :size OFFSET :offset", nativeQuery = true)
-    List<VocabWord> sequence(int offset, int size);
+    // :topic null means every topic, in all the practice queries below.
+    @Query(value = """
+            SELECT * FROM vocab_word
+            WHERE (:topic IS NULL OR topic = :topic)
+            ORDER BY id LIMIT :size OFFSET :offset
+            """, nativeQuery = true)
+    List<VocabWord> sequence(String topic, int offset, int size);
 
     @Query(value = """
             SELECT w.* FROM vocab_word w
             JOIN vocab_saved_word s ON s.word_id = w.id
-            WHERE s.user_id = :userId
+            WHERE s.user_id = :userId AND (:topic IS NULL OR w.topic = :topic)
             ORDER BY w.id LIMIT :size OFFSET :offset
             """, nativeQuery = true)
-    List<VocabWord> savedSequence(Long userId, int offset, int size);
+    List<VocabWord> savedSequence(Long userId, String topic, int offset, int size);
 
     // ORDER BY RAND() scans the whole table, which is fine at hundreds or a few thousand rows.
-    @Query(value = "SELECT * FROM vocab_word ORDER BY RAND() LIMIT :size", nativeQuery = true)
-    List<VocabWord> randomSample(int size);
+    @Query(value = """
+            SELECT * FROM vocab_word
+            WHERE (:topic IS NULL OR topic = :topic)
+            ORDER BY RAND() LIMIT :size
+            """, nativeQuery = true)
+    List<VocabWord> randomSample(String topic, int size);
 
     @Query(value = """
             SELECT w.* FROM vocab_word w
             JOIN vocab_saved_word s ON s.word_id = w.id
-            WHERE s.user_id = :userId
+            WHERE s.user_id = :userId AND (:topic IS NULL OR w.topic = :topic)
             ORDER BY RAND() LIMIT :size
             """, nativeQuery = true)
-    List<VocabWord> randomSavedSample(Long userId, int size);
+    List<VocabWord> randomSavedSample(Long userId, String topic, int size);
+
+    @Query("select count(w) from VocabWord w where (:topic is null or w.topic = :topic)")
+    long countByTopicOrAll(String topic);
+
+    @Query("""
+            select count(w) from VocabWord w
+            where exists (select 1 from VocabSavedWord s where s.wordId = w.id and s.userId = :userId)
+              and (:topic is null or w.topic = :topic)
+            """)
+    long countSaved(Long userId, String topic);
+
+    @Query("""
+            select new com.tuannt.api.dtos.vocab.TopicCountDto(w.topic, count(w)) from VocabWord w
+            where w.topic is not null
+            group by w.topic
+            order by w.topic
+            """)
+    List<TopicCountDto> topicCounts();
 
     // Words the user has never reviewed, oldest first like sequential practice. savedOnly=false
     // skips the saved-word filter, so one query serves both review queue scopes.

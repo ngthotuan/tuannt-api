@@ -14,4 +14,7 @@ public class VocabWordDto extends BaseDto {
     private Long id;
     private String en;
     private String vi;
+    private String ipa;
+    private String example;
+    private String topic;
 }

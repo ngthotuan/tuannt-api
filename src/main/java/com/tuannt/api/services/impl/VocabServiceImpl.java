@@ -5,6 +5,7 @@ import com.tuannt.api.dtos.PageResDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsReqDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsResDto;
 import com.tuannt.api.dtos.vocab.PracticeSetResDto;
+import com.tuannt.api.dtos.vocab.TopicCountDto;
 import com.tuannt.api.dtos.vocab.VocabWordDto;
 import com.tuannt.api.dtos.vocab.VocabWordReqDto;
 import com.tuannt.api.entities.VocabSavedWord;
@@ -48,36 +49,44 @@ public class VocabServiceImpl implements VocabService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResDto<VocabWordDto> listWords(int page, int size, String query, boolean savedOnly, Long userId) {
+    public PageResDto<VocabWordDto> listWords(int page, int size, String query, String topic, boolean savedOnly, Long userId) {
         // Newest first, so a word an admin just added shows up at the top of the first page.
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         String pattern = likePattern(query);
         Page<VocabWord> result = savedOnly
-                ? wordRepository.searchSaved(userId, pattern, pageable)
-                : wordRepository.search(pattern, pageable);
+                ? wordRepository.searchSaved(userId, pattern, blankToNull(topic), pageable)
+                : wordRepository.search(pattern, blankToNull(topic), pageable);
         return PageResDto.of(result, this::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PracticeSetResDto randomWords(int size, boolean savedOnly, Long userId) {
+    public PracticeSetResDto randomWords(int size, String topic, boolean savedOnly, Long userId) {
+        String t = blankToNull(topic);
         List<VocabWord> sample = savedOnly
-                ? wordRepository.randomSavedSample(userId, size)
-                : wordRepository.randomSample(size);
-        return practiceSet(sample, savedOnly, userId);
+                ? wordRepository.randomSavedSample(userId, t, size)
+                : wordRepository.randomSample(t, size);
+        return practiceSet(sample, t, savedOnly, userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PracticeSetResDto sequenceWords(int offset, int size, boolean savedOnly, Long userId) {
+    public PracticeSetResDto sequenceWords(int offset, int size, String topic, boolean savedOnly, Long userId) {
+        String t = blankToNull(topic);
         List<VocabWord> words = savedOnly
-                ? wordRepository.savedSequence(userId, offset, size)
-                : wordRepository.sequence(offset, size);
-        return practiceSet(words, savedOnly, userId);
+                ? wordRepository.savedSequence(userId, t, offset, size)
+                : wordRepository.sequence(t, offset, size);
+        return practiceSet(words, t, savedOnly, userId);
     }
 
-    private PracticeSetResDto practiceSet(List<VocabWord> words, boolean savedOnly, Long userId) {
-        long total = savedOnly ? savedWordRepository.countByUserId(userId) : wordRepository.count();
+    @Override
+    @Transactional(readOnly = true)
+    public List<TopicCountDto> topics() {
+        return wordRepository.topicCounts();
+    }
+
+    private PracticeSetResDto practiceSet(List<VocabWord> words, String topic, boolean savedOnly, Long userId) {
+        long total = savedOnly ? wordRepository.countSaved(userId, topic) : wordRepository.countByTopicOrAll(topic);
         return PracticeSetResDto.builder()
                 .items(words.stream().map(this::toDto).toList())
                 .total(total)
@@ -105,6 +114,7 @@ public class VocabServiceImpl implements VocabService {
             VocabWord word = new VocabWord();
             word.setEn(en);
             word.setVi(item.getVi().trim());
+            applyDetails(word, item);
             word.setCreatedAt(now);
             toSave.add(word);
         }
@@ -129,6 +139,7 @@ public class VocabServiceImpl implements VocabService {
         }
         word.setEn(en);
         word.setVi(req.getVi().trim());
+        applyDetails(word, req);
         log.info("Vocab word updated id: {}", id);
         return toDto(word);
     }
@@ -193,7 +204,26 @@ public class VocabServiceImpl implements VocabService {
         return en.trim().toLowerCase(Locale.ROOT);
     }
 
+    /** Optional fields: blank clears them; IPA loses the /slashes/ dictionaries wrap it in. */
+    private void applyDetails(VocabWord word, VocabWordReqDto req) {
+        String ipa = blankToNull(req.getIpa());
+        word.setIpa(ipa == null ? null : blankToNull(ipa.replaceAll("^[/\\[]+|[/\\]]+$", "")));
+        word.setExample(blankToNull(req.getExample()));
+        word.setTopic(blankToNull(req.getTopic()));
+    }
+
+    private static String blankToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
     private VocabWordDto toDto(VocabWord word) {
-        return VocabWordDto.builder().id(word.getId()).en(word.getEn()).vi(word.getVi()).build();
+        return VocabWordDto.builder()
+                .id(word.getId())
+                .en(word.getEn())
+                .vi(word.getVi())
+                .ipa(word.getIpa())
+                .example(word.getExample())
+                .topic(word.getTopic())
+                .build();
     }
 }

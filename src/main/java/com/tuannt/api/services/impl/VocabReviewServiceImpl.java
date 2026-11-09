@@ -1,6 +1,7 @@
 package com.tuannt.api.services.impl;
 
 import com.tuannt.api.constants.ApiStatus;
+import com.tuannt.api.dtos.vocab.ReviewActivityDto;
 import com.tuannt.api.dtos.vocab.ReviewQueueResDto;
 import com.tuannt.api.dtos.vocab.ReviewReqDto;
 import com.tuannt.api.dtos.vocab.ReviewStateDto;
@@ -144,6 +145,15 @@ public class VocabReviewServiceImpl implements VocabReviewService {
                 .totalReviews(reviewLogRepository.countByUserId(userId))
                 .streakDays(scheduler.streakDays(days))
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReviewActivityDto> activity(Long userId, int days) {
+        LocalDate since = scheduler.today().minusDays(days - 1L);
+        return reviewLogRepository.countPerDay(userId, since).stream()
+                .map(row -> new ReviewActivityDto(row[0].toString(), ((Number) row[1]).longValue()))
+                .toList();
     }
 
     private ReviewQueueResDto.Item item(VocabWord word, VocabReview review) {

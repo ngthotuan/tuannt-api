@@ -20,4 +20,14 @@ public class VocabWordReqDto extends BaseDto {
     @NotBlank(message = "vi is required")
     @Size(max = 500, message = "vi must be at most 500 characters")
     private String vi;
+
+    /** Optional; blank clears it. Slashes around it are dropped. */
+    @Size(max = 100, message = "ipa must be at most 100 characters")
+    private String ipa;
+
+    @Size(max = 500, message = "example must be at most 500 characters")
+    private String example;
+
+    @Size(max = 60, message = "topic must be at most 60 characters")
+    private String topic;
 }

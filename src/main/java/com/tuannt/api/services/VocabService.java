@@ -4,6 +4,7 @@ import com.tuannt.api.dtos.PageResDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsReqDto;
 import com.tuannt.api.dtos.vocab.AddVocabWordsResDto;
 import com.tuannt.api.dtos.vocab.PracticeSetResDto;
+import com.tuannt.api.dtos.vocab.TopicCountDto;
 import com.tuannt.api.dtos.vocab.VocabWordDto;
 import com.tuannt.api.dtos.vocab.VocabWordReqDto;
 
@@ -14,12 +15,15 @@ import java.util.List;
  */
 public interface VocabService {
     /** userId is required when savedOnly is true, otherwise ignored. */
-    PageResDto<VocabWordDto> listWords(int page, int size, String query, boolean savedOnly, Long userId);
+    PageResDto<VocabWordDto> listWords(int page, int size, String query, String topic, boolean savedOnly, Long userId);
 
-    PracticeSetResDto randomWords(int size, boolean savedOnly, Long userId);
+    PracticeSetResDto randomWords(int size, String topic, boolean savedOnly, Long userId);
 
     /** Oldest first, starting at a zero-based offset. */
-    PracticeSetResDto sequenceWords(int offset, int size, boolean savedOnly, Long userId);
+    PracticeSetResDto sequenceWords(int offset, int size, String topic, boolean savedOnly, Long userId);
+
+    /** Topics in use, alphabetical, with word counts. */
+    List<TopicCountDto> topics();
 
     AddVocabWordsResDto addWords(AddVocabWordsReqDto req);
 

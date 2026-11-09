@@ -33,6 +33,17 @@ public class VocabWord {
     @Column(nullable = false, length = 500)
     private String vi;
 
+    /** IPA without slashes, e.g. ˈkær.ɪər; null until filled in. */
+    @Column(length = 100)
+    private String ipa;
+
+    @Column(length = 500)
+    private String example;
+
+    /** Free text such as "IELTS" or "Work"; null for no topic. */
+    @Column(length = 60)
+    private String topic;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

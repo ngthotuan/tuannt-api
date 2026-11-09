@@ -168,6 +168,12 @@ class VocabReviewFlowIntegrationTest {
                 .andExpect(jsonPath("$.mature").value(0))
                 .andExpect(jsonPath("$.totalReviews").value(3))
                 .andExpect(jsonPath("$.streakDays").value(2));
+        mvc.perform(get("/v1/vocab/review/activity").param("days", "7").header("Authorization", user))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].day").value("2026-11-02"))
+                .andExpect(jsonPath("$[0].count").value(1))
+                .andExpect(jsonPath("$[1].count").value(2));
 
         review(user, wordId, "AGAIN")
                 .andExpect(jsonPath("$.intervalDays").value(0))
