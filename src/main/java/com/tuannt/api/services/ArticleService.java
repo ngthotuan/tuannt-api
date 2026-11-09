@@ -1,5 +1,6 @@
 package com.tuannt.api.services;
 
+import com.tuannt.api.dtos.article.ArticleCategoryDto;
 import com.tuannt.api.dtos.article.ArticleReqDto;
 import com.tuannt.api.dtos.article.ArticleResDto;
 
@@ -12,6 +13,8 @@ import java.util.Map;
 
 public interface ArticleService {
     Map<String, List<String>> getSources();
+
+    Map<String, List<ArticleCategoryDto>> getCategories();
 
     ArticleResDto getArticle(ArticleReqDto articleReqDto);
 }

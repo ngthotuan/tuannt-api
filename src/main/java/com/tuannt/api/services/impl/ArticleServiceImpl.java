@@ -8,6 +8,7 @@ import com.rometools.rome.io.XmlReader;
 import com.tuannt.api.configs.ArticleConfig;
 import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.dtos.article.ArticleDetailDto;
+import com.tuannt.api.dtos.article.ArticleCategoryDto;
 import com.tuannt.api.dtos.article.ArticleReqDto;
 import com.tuannt.api.dtos.article.ArticleResDto;
 import com.tuannt.api.exceptions.BadRequestException;
@@ -54,6 +55,11 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public Map<String, List<String>> getSources() {
         return articleConfig.getSources();
+    }
+
+    @Override
+    public Map<String, List<ArticleCategoryDto>> getCategories() {
+        return articleConfig.getCategories();
     }
 
     @Override

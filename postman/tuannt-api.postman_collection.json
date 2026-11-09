@@ -1634,6 +1634,28 @@
           }
         },
         {
+          "name": "Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/article/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "article",
+                "categories"
+              ]
+            },
+            "description": "Same sources as /sources, but each category is { key, title } (display title), in config order. Used by the Feeds page.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
           "name": "Articles",
           "request": {
             "method": "GET",

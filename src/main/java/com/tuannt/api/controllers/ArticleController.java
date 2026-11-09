@@ -1,6 +1,7 @@
 package com.tuannt.api.controllers;
 
 import com.tuannt.api.constants.ApiPaths;
+import com.tuannt.api.dtos.article.ArticleCategoryDto;
 import com.tuannt.api.dtos.article.ArticleReqDto;
 import com.tuannt.api.dtos.article.ArticleResDto;
 import com.tuannt.api.services.ArticleService;
@@ -31,6 +32,12 @@ public class ArticleController {
     @GetMapping("/sources")
     public Map<String, List<String>> getSources() {
         return articleService.getSources();
+    }
+
+    // Same sources as /sources, but each category carries its display title, in config order.
+    @GetMapping("/categories")
+    public Map<String, List<ArticleCategoryDto>> getCategories() {
+        return articleService.getCategories();
     }
 
     // http://localhost:8089/api/v1/article?source=vnexpress&category=tin-moi-nhat
