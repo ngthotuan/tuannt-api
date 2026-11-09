@@ -34,6 +34,9 @@ auth:
   admin:
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
+github:
+  username: ngthotuan
+  token: ${GITHUB_TOKEN:}
 cors:
   allowedOriginPatterns:
     - "https://nttuan.dev"

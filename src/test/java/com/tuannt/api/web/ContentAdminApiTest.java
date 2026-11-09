@@ -19,6 +19,7 @@ import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.NotFoundException;
 import com.tuannt.api.services.AuthService;
 import com.tuannt.api.services.ContactService;
+import com.tuannt.api.services.GithubService;
 import com.tuannt.api.services.PostService;
 import com.tuannt.api.services.ProjectService;
 import com.tuannt.api.utils.CommonUtil;
@@ -87,6 +88,17 @@ class ContentAdminApiTest {
     private ContactService contactService;
     @MockitoBean
     private AuthService authService;
+    @MockitoBean
+    private GithubService githubService;
+
+    @Test
+    void githubImportListIsAdminOnly() throws Exception {
+        mvc.perform(get("/v1/admin/projects/github")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/v1/admin/projects/github").with(USER)).andExpect(status().isForbidden());
+        when(githubService.listRepos()).thenReturn(List.of());
+        mvc.perform(get("/v1/admin/projects/github").with(ADMIN)).andExpect(status().isOk());
+        verify(githubService).listRepos();
+    }
 
     @Test
     void publicReadsNeedNoToken() throws Exception {

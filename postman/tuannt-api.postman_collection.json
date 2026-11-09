@@ -1440,6 +1440,26 @@
           }
         },
         {
+          "name": "List GitHub repos to import",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/admin/projects/github",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin",
+                "projects",
+                "github"
+              ]
+            },
+            "description": "ADMIN. Public repos of `github.username` (application.yaml), most recently pushed first. `imported` is true when a project already links to the repo. 502 EXTERNAL_SERVER_ERROR when GitHub fails."
+          }
+        },
+        {
           "name": "Create project",
           "request": {
             "method": "POST",

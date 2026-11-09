@@ -1,8 +1,10 @@
 package com.tuannt.api.controllers;
 
 import com.tuannt.api.constants.ApiPaths;
+import com.tuannt.api.dtos.project.GithubRepoDto;
 import com.tuannt.api.dtos.project.ProjectDto;
 import com.tuannt.api.dtos.project.ProjectReqDto;
+import com.tuannt.api.services.GithubService;
 import com.tuannt.api.services.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +36,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminProjectController {
     private final ProjectService projectService;
+    private final GithubService githubService;
 
     @GetMapping
     public List<ProjectDto> list() {
         return projectService.listAll();
+    }
+
+    /** Public GitHub repos to import; the admin UI creates the chosen ones through POST. */
+    @GetMapping("/github")
+    public List<GithubRepoDto> githubRepos() {
+        return githubService.listRepos();
     }
 
     @GetMapping("/{id}")
