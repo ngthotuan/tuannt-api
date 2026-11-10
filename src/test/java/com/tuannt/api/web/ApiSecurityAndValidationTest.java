@@ -4,6 +4,7 @@ import com.tuannt.api.configs.AuthConfig;
 import com.tuannt.api.configs.CorsConfig;
 import com.tuannt.api.configs.GlobalConfig;
 import com.tuannt.api.configs.SecurityConfig;
+import com.tuannt.api.configs.TokenVersionValidator;
 import com.tuannt.api.controllers.AdminController;
 import com.tuannt.api.controllers.AuthController;
 import com.tuannt.api.controllers.VocabController;
@@ -74,6 +75,9 @@ class ApiSecurityAndValidationTest {
     private MockMvc mvc;
     @MockitoBean
     private VocabService vocabService;
+    // Revocation is covered by the integration tests; tokens here come from jwt().
+    @MockitoBean
+    private TokenVersionValidator tokenVersionValidator;
     @MockitoBean
     private AuthService authService;
 

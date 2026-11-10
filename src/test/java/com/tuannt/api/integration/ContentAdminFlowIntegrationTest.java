@@ -207,31 +207,36 @@ class ContentAdminFlowIntegrationTest {
         mvc.perform(json(put("/v1/auth/password"), user, "{\"currentPassword\":\"wrong-password\",\"newPassword\":\"user-password-2\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_CREDENTIALS"));
-        mvc.perform(json(put("/v1/auth/password"), user, "{\"currentPassword\":\"user-password-1\",\"newPassword\":\"user-password-2\"}"))
-                .andExpect(status().isNoContent());
+        String fresh = "Bearer " + body(mvc.perform(json(put("/v1/auth/password"), user,
+                        "{\"currentPassword\":\"user-password-1\",\"newPassword\":\"user-password-2\"}"))
+                .andExpect(status().isOk())).path("token").asText();
+        // The change revokes the old token (other devices are signed out); the returned one works.
+        mvc.perform(get("/v1/auth/me").header("Authorization", user)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/v1/auth/me").header("Authorization", fresh)).andExpect(status().isOk());
         bearer("it-user", "user-password-2");
 
         mvc.perform(json(put("/v1/admin/users/" + itAdminId + "/role"), admin, "{\"role\":\"USER\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("CANNOT_CHANGE_SELF"));
 
-        // A second admin is demoted; its old token still carries the ADMIN claim, and using it to
-        // remove the one real admin left must be refused.
+        // A demoted admin's old token still carries the ADMIN claim, so demotion revokes it.
         long secondId = createUser(admin, "it-admin-2", "admin-password-2", "ADMIN");
         String second = bearer("it-admin-2", "admin-password-2");
+        mvc.perform(get("/v1/admin/users").header("Authorization", second)).andExpect(status().isOk());
         mvc.perform(json(put("/v1/admin/users/" + secondId + "/role"), admin, "{\"role\":\"USER\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("USER"));
         mvc.perform(delete("/v1/admin/users/" + itAdminId).header("Authorization", second))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value("LAST_ADMIN"));
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/v1/admin/users").header("Authorization", bearer("it-admin-2", "admin-password-2")))
+                .andExpect(status().isForbidden());
 
         mvc.perform(get("/v1/admin/users").header("Authorization", admin))
                 .andExpect(jsonPath("$[0].passwordHash").doesNotExist())
                 .andExpect(jsonPath("$[0].createdAt").isNumber());
         mvc.perform(delete("/v1/admin/users/" + userId).header("Authorization", admin)).andExpect(status().isNoContent());
         mvc.perform(delete("/v1/admin/users/" + secondId).header("Authorization", admin)).andExpect(status().isNoContent());
-        mvc.perform(get("/v1/auth/me").header("Authorization", user)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/v1/auth/me").header("Authorization", fresh)).andExpect(status().isUnauthorized());
     }
 
     private long createUser(String admin, String username, String password, String role) throws Exception {

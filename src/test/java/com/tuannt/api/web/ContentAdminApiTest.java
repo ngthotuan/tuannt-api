@@ -4,6 +4,7 @@ import com.tuannt.api.configs.AuthConfig;
 import com.tuannt.api.configs.CorsConfig;
 import com.tuannt.api.configs.GlobalConfig;
 import com.tuannt.api.configs.SecurityConfig;
+import com.tuannt.api.configs.TokenVersionValidator;
 import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.constants.PostStatus;
 import com.tuannt.api.constants.UserRole;
@@ -82,6 +83,9 @@ class ContentAdminApiTest {
     private MockMvc mvc;
     @MockitoBean
     private PostService postService;
+    // Revocation is covered by the integration tests; tokens here come from jwt().
+    @MockitoBean
+    private TokenVersionValidator tokenVersionValidator;
     @MockitoBean
     private ProjectService projectService;
     @MockitoBean
@@ -227,7 +231,7 @@ class ContentAdminApiTest {
         String body = "{\"currentPassword\":\"old-password\",\"newPassword\":\"new-password\"}";
         mvc.perform(json(put("/v1/auth/password"), body)).andExpect(status().isUnauthorized());
         verifyNoInteractions(authService);
-        mvc.perform(json(put("/v1/auth/password"), body).with(USER)).andExpect(status().isNoContent());
+        mvc.perform(json(put("/v1/auth/password"), body).with(USER)).andExpect(status().isOk());
         verify(authService).changeOwnPassword(eq(7L), any());
         mvc.perform(json(put("/v1/auth/password"), "{\"currentPassword\":\"x\",\"newPassword\":\"short\"}").with(USER))
                 .andExpect(status().isBadRequest());

@@ -4,6 +4,7 @@ import com.tuannt.api.configs.AuthConfig;
 import com.tuannt.api.configs.CorsConfig;
 import com.tuannt.api.configs.GlobalConfig;
 import com.tuannt.api.configs.SecurityConfig;
+import com.tuannt.api.configs.TokenVersionValidator;
 import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.constants.ReviewGrade;
 import com.tuannt.api.controllers.VocabReviewController;
@@ -64,6 +65,9 @@ class VocabReviewApiTest {
     private MockMvc mvc;
     @MockitoBean
     private VocabReviewService reviewService;
+    // Revocation is covered by the integration tests; tokens here come from jwt().
+    @MockitoBean
+    private TokenVersionValidator tokenVersionValidator;
 
     @Test
     void everyReviewEndpointNeedsAToken() throws Exception {

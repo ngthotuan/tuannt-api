@@ -20,7 +20,8 @@ public interface AuthService {
     UserDto createUser(CreateUserReqDto req);
 
     /** Wrong current password is a 401 INVALID_CREDENTIALS. */
-    void changeOwnPassword(Long userId, ChangePasswordReqDto req);
+    /** Revokes the user's existing tokens and returns a new one. */
+    LoginResDto changeOwnPassword(Long userId, ChangePasswordReqDto req);
 
     List<UserDto> listUsers();
 

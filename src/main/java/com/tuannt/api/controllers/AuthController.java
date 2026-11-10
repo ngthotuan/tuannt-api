@@ -47,11 +47,13 @@ public class AuthController {
         return authService.me(Long.valueOf(jwt.getSubject()));
     }
 
-    /** Existing tokens stay valid until they expire; there is no token revocation. */
+    /**
+     * Revokes every token issued so far (other devices are signed out) and returns a fresh one,
+     * so the caller stays logged in.
+     */
     @PutMapping("/password")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changePassword(@Valid @RequestBody ChangePasswordReqDto req, @AuthenticationPrincipal Jwt jwt) {
-        authService.changeOwnPassword(Long.valueOf(jwt.getSubject()), req);
+    public LoginResDto changePassword(@Valid @RequestBody ChangePasswordReqDto req, @AuthenticationPrincipal Jwt jwt) {
+        return authService.changeOwnPassword(Long.valueOf(jwt.getSubject()), req);
     }
 
 }

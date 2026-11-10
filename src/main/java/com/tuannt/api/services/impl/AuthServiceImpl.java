@@ -2,6 +2,7 @@ package com.tuannt.api.services.impl;
 
 import com.tuannt.api.configs.AuthConfig;
 import com.tuannt.api.configs.SecurityConfig;
+import com.tuannt.api.configs.TokenVersionValidator;
 import com.tuannt.api.constants.ApiStatus;
 import com.tuannt.api.constants.UserRole;
 import com.tuannt.api.dtos.auth.ChangePasswordReqDto;
@@ -57,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
     private final VocabSavedWordRepository savedWordRepository;
     private final VocabReviewRepository reviewRepository;
     private final VocabReviewLogRepository reviewLogRepository;
+    private final TokenVersionValidator tokenVersionValidator;
 
     @Override
     @Transactional(readOnly = true)
@@ -78,6 +80,11 @@ public class AuthServiceImpl implements AuthService {
                     return new UnauthorizedException(ApiStatus.INVALID_CREDENTIALS);
                 });
 
+        log.info("Login succeeded for user id: {} username: {}", user.getId(), user.getUsername());
+        return issueToken(user);
+    }
+
+    private LoginResDto issueToken(AppUser user) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(authConfig.getTokenTtl());
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -86,16 +93,21 @@ public class AuthServiceImpl implements AuthService {
                 .expiresAt(expiresAt)
                 .claim(SecurityConfig.USERNAME_CLAIM, user.getUsername())
                 .claim(SecurityConfig.ROLE_CLAIM, user.getRole().name())
+                .claim(TokenVersionValidator.VERSION_CLAIM, user.getTokenVersion())
                 .build();
         String token = jwtEncoder.encode(JwtEncoderParameters.from(
                 JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
-
-        log.info("Login succeeded for user id: {} username: {}", user.getId(), user.getUsername());
         return LoginResDto.builder()
                 .token(token)
                 .expiresAt(expiresAt.toEpochMilli())
                 .user(toDto(user))
                 .build();
+    }
+
+    /** Every token issued to this user so far stops working once the transaction commits. */
+    private void revokeTokens(AppUser user) {
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        tokenVersionValidator.evict(user.getId());
     }
 
     @Override
@@ -126,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void changeOwnPassword(Long userId, ChangePasswordReqDto req) {
+    public LoginResDto changeOwnPassword(Long userId, ChangePasswordReqDto req) {
         // Same budget as login: a stolen token must not become a way to brute-force the password.
         if (!rateLimiter.tryAcquire("password:" + userId, MAX_LOGINS_PER_WINDOW, LOGIN_WINDOW)) {
             log.warn("Password change rate limited for user id: {}", userId);
@@ -141,7 +153,10 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException(ApiStatus.INVALID_CREDENTIALS);
         }
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        // Signs out every other device; the caller gets a fresh token to stay logged in here.
+        revokeTokens(user);
         log.info("Password changed by user id: {}", userId);
+        return issueToken(user);
     }
 
     @Override
@@ -156,6 +171,7 @@ public class AuthServiceImpl implements AuthService {
         requireBcryptLength(password, "password");
         AppUser user = findUser(userId);
         user.setPasswordHash(passwordEncoder.encode(password));
+        revokeTokens(user);
         log.info("Password reset by admin for user id: {}", userId);
     }
 
@@ -170,6 +186,8 @@ public class AuthServiceImpl implements AuthService {
             guardAdminRemoval(actorId, user);
         }
         user.setRole(role);
+        // The old tokens carry the old role claim.
+        revokeTokens(user);
         log.info("Role changed for user id: {} to {} by user id: {}", userId, role, actorId);
         return toDto(user);
     }
@@ -189,13 +207,11 @@ public class AuthServiceImpl implements AuthService {
         reviewRepository.deleteByUserId(userId);
         reviewLogRepository.deleteByUserId(userId);
         userRepository.delete(user);
+        tokenVersionValidator.evict(userId);
         log.info("User deleted id: {} username: {} by user id: {}", userId, user.getUsername(), actorId);
     }
 
-    /**
-     * Rules for taking an admin away, by demotion or deletion. Existing tokens are not revoked:
-     * a removed admin's token keeps its ADMIN claim until it expires.
-     */
+    /** Rules for taking an admin away, by demotion or deletion. Their tokens are revoked by the caller. */
     private void guardAdminRemoval(Long actorId, AppUser admin) {
         if (actorId.equals(admin.getId())) {
             throw new BadRequestException(ApiStatus.CANNOT_CHANGE_SELF);

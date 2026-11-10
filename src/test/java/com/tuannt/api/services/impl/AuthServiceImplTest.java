@@ -1,8 +1,11 @@
 package com.tuannt.api.services.impl;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.tuannt.api.configs.AuthConfig;
+import com.tuannt.api.configs.TokenVersionValidator;
 import com.tuannt.api.constants.UserRole;
 import com.tuannt.api.dtos.auth.ChangePasswordReqDto;
+import com.tuannt.api.dtos.auth.LoginResDto;
 import com.tuannt.api.entities.AppUser;
 import com.tuannt.api.exceptions.BadRequestException;
 import com.tuannt.api.exceptions.BaseException;
@@ -11,6 +14,8 @@ import com.tuannt.api.repositories.AppUserRepository;
 import com.tuannt.api.repositories.VocabReviewLogRepository;
 import com.tuannt.api.repositories.VocabReviewRepository;
 import com.tuannt.api.repositories.VocabSavedWordRepository;
+import java.nio.charset.StandardCharsets;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +24,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,8 +40,12 @@ class AuthServiceImplTest {
     private final VocabSavedWordRepository savedWords = mock(VocabSavedWordRepository.class);
     private final VocabReviewRepository reviews = mock(VocabReviewRepository.class);
     private final VocabReviewLogRepository reviewLogs = mock(VocabReviewLogRepository.class);
-    private final AuthServiceImpl service = new AuthServiceImpl(users, encoder, mock(JwtEncoder.class),
-            new AuthConfig(), new RateLimiter(), savedWords, reviews, reviewLogs);
+    private final TokenVersionValidator tokenVersions = mock(TokenVersionValidator.class);
+    // A real encoder: a password change hands back a freshly signed token.
+    private final JwtEncoder jwtEncoder = new NimbusJwtEncoder(new ImmutableSecret<>(
+            new SecretKeySpec("test-secret-that-is-at-least-32-bytes-long".getBytes(StandardCharsets.UTF_8), "HmacSHA256")));
+    private final AuthServiceImpl service = new AuthServiceImpl(users, encoder, jwtEncoder,
+            new AuthConfig(), new RateLimiter(), savedWords, reviews, reviewLogs, tokenVersions);
 
     @Test
     void adminCannotDemoteOrDeleteThemselves() {
@@ -92,8 +102,12 @@ class AuthServiceImplTest {
                 .extracting(e -> ((UnauthorizedException) e).getApiError().getErrorCode())
                 .isEqualTo("INVALID_CREDENTIALS");
 
-        service.changeOwnPassword(3L, change("old-password", "new-password"));
+        LoginResDto fresh = service.changeOwnPassword(3L, change("old-password", "new-password"));
         assertThat(encoder.matches("new-password", me.getPasswordHash())).isTrue();
+        // Older tokens are revoked; the response carries one for the new version.
+        assertThat(me.getTokenVersion()).isEqualTo(1);
+        assertThat(fresh.getToken()).isNotBlank();
+        verify(tokenVersions).evict(3L);
     }
 
     @Test

@@ -38,6 +38,10 @@ public class AppUser {
     @Column(nullable = false, length = 16)
     private UserRole role;
 
+    /** See TokenVersionValidator: bumping it revokes every token issued before. */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }
