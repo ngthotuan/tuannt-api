@@ -149,9 +149,10 @@ class PostServiceImplTest {
     @Test
     void explicitPublishDateIsKept() {
         PostReqDto req = req("p", "Title", PostStatus.PUBLISHED);
-        req.setPublishedAt(1_900_000_000_000L);
+        req.setPublishedAt(1_900_000_000_123L);
         req.setVisibility(PostVisibility.UNLISTED);
         PostDto created = service.create(req);
+        // Truncated to whole seconds, as DATETIME would otherwise round it.
         assertThat(created.getPublishedAt()).isEqualTo(1_900_000_000_000L);
         assertThat(created.getVisibility()).isEqualTo(PostVisibility.UNLISTED);
     }

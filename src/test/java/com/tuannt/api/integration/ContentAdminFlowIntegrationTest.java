@@ -96,7 +96,7 @@ class ContentAdminFlowIntegrationTest {
         String admin = bearer("it-admin", "it-admin-password");
         long past = System.currentTimeMillis() - 60_000;
         long future = System.currentTimeMillis() + 86_400_000;
-        String publicPost = createPost(admin, "Kafka 100% ổn định", "kafka-public", "PUBLIC", "PUBLISHED", past, "[\"kafka\",\"java\"]");
+        String publicPost = createPost(admin, "Kafka 100% ổn định", "kafka-public", "PUBLIC", "PUBLISHED", past, "[\"kafka\",\"kafka-streams\"]");
         createPost(admin, "Kafka bí mật", "kafka-unlisted", "UNLISTED", "PUBLISHED", past, "[\"kafka\"]");
         createPost(admin, "Kafka cho thành viên", "kafka-members", "MEMBERS", "PUBLISHED", past, "[\"kafka\"]");
         long scheduledId = createPostId(admin, "Kafka tuần sau", "kafka-scheduled", "PUBLIC", "PUBLISHED", future, "[\"kafka\"]");

@@ -29,6 +29,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -240,10 +241,12 @@ public class PostServiceImpl implements PostService {
         post.setTags(commonUtil.toJsonArray(normalizeTags(req.getTags())));
         post.setStatus(req.getStatus());
         post.setVisibility(req.getVisibility());
+        // Whole seconds: DATETIME rounds fractions to the nearest second, so 10:00:00.6 would be
+        // stored as 10:00:01 and a post published "now" would read as scheduled for a moment.
         if (req.getPublishedAt() != null) {
-            post.setPublishedAt(Instant.ofEpochMilli(req.getPublishedAt()));
+            post.setPublishedAt(Instant.ofEpochMilli(req.getPublishedAt()).truncatedTo(ChronoUnit.SECONDS));
         } else if (req.getStatus() == PostStatus.PUBLISHED && post.getPublishedAt() == null) {
-            post.setPublishedAt(now);
+            post.setPublishedAt(now.truncatedTo(ChronoUnit.SECONDS));
         }
         post.setUpdatedAt(now);
     }
