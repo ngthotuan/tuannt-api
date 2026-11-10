@@ -34,6 +34,11 @@ auth:
   admin:
     username: ${ADMIN_USERNAME:}
     password: ${ADMIN_PASSWORD:}
+notify:
+  # Email alerts for contact messages via Resend; disabled while the key or recipient is empty.
+  resendApiKey: ${RESEND_API_KEY:}
+  to: ${CONTACT_NOTIFY_EMAIL:}
+  from: ${CONTACT_NOTIFY_FROM:nttuan.dev <contact@nttuan.dev>}
 github:
   username: ngthotuan
   token: ${GITHUB_TOKEN:}

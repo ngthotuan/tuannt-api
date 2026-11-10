@@ -33,6 +33,7 @@ public class ContactServiceImpl implements ContactService {
 
     private final ContactMessageRepository repository;
     private final RateLimiter rateLimiter;
+    private final ContactNotifier notifier;
 
     @Override
     @Transactional
@@ -53,6 +54,7 @@ public class ContactServiceImpl implements ContactService {
 
         ContactMessage saved = repository.save(entity);
         log.info("Contact message saved id: {} from: {}", saved.getId(), saved.getEmail());
+        notifier.messageReceived(saved);
     }
 
     @Override
